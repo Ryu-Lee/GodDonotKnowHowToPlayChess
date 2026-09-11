@@ -167,13 +167,30 @@ static func oneway_ok(state: MatchState, from_x: int, from_y: int, tx: int, ty: 
 	return sign(d.y) == sign(c.pass_dir.y)
 
 ## 有限次数通过消费(每次实际进入扣 1;扣到 0 后不可通行)。
+## 幂等:同一 Action 只消费一次(悔棋重放安全)。
 static func consume_pass(state: MatchState, act: Action) -> void:
+	if act.consumed_pass:
+		return
 	var board := state.board
 	if not board.in_bounds(act.to_x, act.to_y):
 		return
 	var c := board.cell(act.to_x, act.to_y)
 	if c.pass_rule == "limited" and c.pass_limit > 0:
 		c.pass_limit -= 1
+		act.consumed_pass = true
+
+## 消费返还(悔棋)。
+static func refund_pass(state: MatchState, act: Action) -> void:
+	if not act.consumed_pass:
+		return
+	var board := state.board
+	if not board.in_bounds(act.to_x, act.to_y):
+		act.consumed_pass = false
+		return
+	var c := board.cell(act.to_x, act.to_y)
+	if c.pass_rule == "limited":
+		c.pass_limit += 1
+	act.consumed_pass = false
 
 # ---------------------------------------------------------------- 判定辅助
 

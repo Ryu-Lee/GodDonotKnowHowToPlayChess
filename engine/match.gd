@@ -117,6 +117,7 @@ func undo_last() -> bool:
 	var act := history.pop_back() as Action
 	if act.is_move():
 		MoveGen.undo(state, act)
+		MoveGen.refund_pass(state, act)
 	else:
 		Combat.undo_attack(state, act)
 	# 回合回退:若该行动没结束回合,回合不变;否则翻回
@@ -127,18 +128,21 @@ func undo_last() -> bool:
 	return true
 
 ## 重放历史恢复回合状态(悔棋后)。
+## limited 地形消费随重放重新结算(consumed_pass 幂等保证不重复扣)。
 func _rebuild_turn_state() -> void:
 	acted.clear()
 	state.turn = "red"
 	state.move_count = 0
 	var replayed: Array[Action] = []
 	for act in history:
+		act.consumed_pass = false
 		replayed.append(act)
 	history.clear()
 	for act in replayed:
 		# 纯逻辑回放:不再校验,直接按经济结算
 		if act.is_move():
 			MoveGen.apply(state, act)
+			MoveGen.consume_pass(state, act)
 		else:
 			Combat.apply_attack(state, act)
 		history.append(act)

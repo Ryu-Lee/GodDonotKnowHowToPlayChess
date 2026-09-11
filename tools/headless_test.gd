@@ -29,7 +29,7 @@ func _new_match() -> Match:
 	return Match.new(pack["state"], pack["rules"], pack["piece_types"])
 
 func _run_tests() -> void:
-	print("=== Headless engine tests (M0) ===")
+	print("=== Headless engine tests (M0+M1) ===")
 	_test_initial_setup()
 	_test_movegen_counts()
 	_test_ma_leg()
@@ -40,6 +40,9 @@ func _run_tests() -> void:
 	_test_checkmate()
 	_test_undo()
 	_test_selfplay()
+	_test_terrain_impassable()
+	_test_terrain_oneway()
+	_test_terrain_limited()
 	print("=== Results: %d passed, %d failed ===" % [pass_count, fail_count])
 
 # ---------------------------------------------------------------- 测试用例
@@ -223,3 +226,65 @@ func _test_selfplay() -> void:
 			finished += 1
 		print("    game %d: %d moves, result=%s" % [i + 1, steps, WinCond.result_name(m.result)])
 	_check(finished > 0, "at least one selfplay game finished within cap")
+
+# ---------------------------------------------------------------- M1 地形
+
+func _test_terrain_impassable() -> void:
+	print("[terrain: impassable]")
+	var m := _new_match()
+	# 红车 (0,9) 上方 (0,8) 设禁行格 => 车向上被截断,只能横向滑
+	var ju := _piece(m.state, "red", 0, 9)
+	m.state.board.cell(0, 8).pass_rule = "impassable"
+	var moves := MoveGen.piece_moves(m.state, ju)
+	var targets := {}
+	for mv in moves:
+		targets[Vector2i(mv.to_x, mv.to_y)] = true
+	_check(not targets.has(Vector2i(0, 8)), "chariot blocked at impassable (0,8)")
+	_check(not targets.has(Vector2i(0, 7)), "chariot cannot slide past impassable")
+	_check(targets.has(Vector2i(1, 9)), "chariot still slides sideways to (1,9)")
+
+func _test_terrain_oneway() -> void:
+	print("[terrain: oneway]")
+	var m := _new_match()
+	# 红兵 (0,6) 前方 (0,5) 设单向:pass_dir=(0,1)(只允许从上往下进入,红兵从下往上 => 禁)
+	var bing := _piece(m.state, "red", 0, 6)
+	m.state.board.cell(0, 5).pass_rule = "oneway"
+	m.state.board.cell(0, 5).pass_dir = Vector2i(0, 1)
+	# 未过河兵本可前进 (0,5);单向拦截 => 无走法
+	var moves := MoveGen.piece_moves(m.state, bing)
+	_check(moves.is_empty(), "pawn blocked by oneway (dir mismatch)")
+	# 黑卒 (0,3) 向下进入 (0,4)? pass_dir=(0,1) 允许向下 => 需构造黑卒在 (0,2) 向下走 (0,3) 已占;换格:黑卒从 (1,3) 走 (1,4) 不受影响
+	m.state.board.cell(0, 5).pass_dir = Vector2i(0, -1)   # 反向:只允许从下往上(红兵方向)
+	var moves2 := MoveGen.piece_moves(m.state, bing)
+	var ok := false
+	for mv in moves2:
+		if mv.to_x == 0 and mv.to_y == 5:
+			ok = true
+	_check(ok, "pawn passes oneway when dir matches")
+
+func _test_terrain_limited() -> void:
+	print("[terrain: limited]")
+	var m := _new_match()
+	# 红兵 (0,6) 前方 (0,5) 设 limited=1
+	var bing := _piece(m.state, "red", 0, 6)
+	m.state.board.cell(0, 5).pass_rule = "limited"
+	m.state.board.cell(0, 5).pass_limit = 1
+	var mv1 := m.try_move(bing, 0, 5)
+	_check(mv1 != null, "pawn enters limited cell (1st use)")
+	_check(m.state.board.cell(0, 5).pass_limit == 0, "pass_limit consumed to 0")
+	# 黑方随便走一步,再验证红方无法再进入(0,5)已占,换黑卒走;然后悔棋验证返还
+	var black_bing := _piece(m.state, "black", 0, 3)
+	m.try_move(black_bing, 0, 4)
+	m.undo_last()
+	m.undo_last()
+	_check(m.state.board.cell(0, 5).pass_limit == 1, "pass_limit refunded after undo")
+	_check(m.state.piece_at(0, 6) == bing, "pawn back at (0,6) after undo")
+	# 重新进入后用尽:limit=0 => 不可再入;把兵放回 (0,6) 后 (0,5) 空且 limit=1
+	mv1 = m.try_move(bing, 0, 5)
+	_check(mv1 != null and m.state.board.cell(0, 5).pass_limit == 0, "re-enter consumes again")
+	# 另一红兵从 (2,6) 挪到 (2,5) 不受限;构造第二个红兵进 (0,5)? 已占。清空后直接放新兵:
+	m.state.pieces.append(Piece.new(m.piece_types["bing"], "red", 0, 7))
+	var bing2 := _piece(m.state, "red", 0, 7)
+	m.state.turn = "red"
+	var mv2 := m.try_move(bing2, 0, 6)
+	_check(mv2 != null, "another pawn passes through non-limited (0,6) fine")

@@ -16,6 +16,8 @@ var target: Piece = null
 var captured: Piece = null
 ## 攻击造成的伤害序列 [{piece, dmg}]。
 var damage_log: Array = []
+## 本行动是否消费了 limited 地形次数(悔棋时返还)。
+var consumed_pass := false
 
 func _init(p: Piece, tx: int, ty: int, k: int = Kind.MOVE, tgt: Piece = null) -> void:
 	piece = p
