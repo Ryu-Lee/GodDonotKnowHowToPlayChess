@@ -1,0 +1,26 @@
+engine/movegen.gd
+  s_1ba4c6c4cd332f::t_e6c43be919dc9d 170,172-173,180-193
+engine/action.gd
+  s_1ba4c6c4cd332f::t_4b96eb9a4d3043 19-20
+tools/headless_test.gd
+  s_1ba4c6c4cd332f::t_e98e15d97240e9 32,43-45
+  s_1ba4c6c4cd332f::t_6571e7daae4d82 229-290
+engine/match.gd
+  s_1ba4c6c4cd332f::t_a75da7ca51a200 120,131,138,145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "479e3282ad45de2f83de7d9acb342302aea896db",
+  "prompts": {},
+  "sessions": {
+    "s_1ba4c6c4cd332f": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "56129513-476f-4569-a0ef-cc7a9a6668a6",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
