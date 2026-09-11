@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "rule_set_id": "god_fantasy_rules",
+  "name": "神的试炼规则",
+  "blockers": {
+    "ma_leg": {
+      "description": "蹩马腿:马向 N 格方向上若有棋子则该方向不可走",
+      "type": "offset_blocker",
+      "params": { "offset": "leg_of_direction" }
+    },
+    "xiang_eye": {
+      "description": "塞象眼:象向 2 格方向的中点若有棋子则该方向不可走",
+      "type": "offset_blocker",
+      "params": { "offset": "midpoint_of_direction" }
+    }
+  },
+  "temp_rules": [],
+  "win_conditions": [
+    { "id": "capture_general", "type": "royal_captured" },
+    { "id": "checkmate", "type": "royal_no_legal_moves_under_check" },
+    { "id": "stalemate_lose", "type": "no_legal_moves_lose" }
+  ]
+}

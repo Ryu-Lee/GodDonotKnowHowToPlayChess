@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "pack_id": "god_fantasy",
+  "piece_types": {
+    "knight": {
+      "name": "骑士",
+      "tier": "fantasy",
+      "move": {
+        "type": "rider",
+        "pattern": [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]]
+      },
+      "attack": {
+        "type": "melee",
+        "pattern": [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]],
+        "power": 1,
+        "counter": true
+      },
+      "action_economy": "tactics",
+      "hp": 2,
+      "value": 4,
+      "royal": false,
+      "abilities": [],
+      "flavor": "神随手捏出的西洋棋子,八方跳跃不蹩腿,近身互殴有反击。"
+    },
+    "archer": {
+      "name": "弓箭手",
+      "tier": "fantasy",
+      "move": {
+        "type": "step",
+        "pattern": [[1, 0], [-1, 0], [0, 1], [0, -1]]
+      },
+      "attack": {
+        "type": "ranged",
+        "range": 3,
+        "power": 1,
+        "counter": false
+      },
+      "action_economy": "tactics",
+      "hp": 1,
+      "value": 3,
+      "royal": false,
+      "abilities": [],
+      "flavor": "居高临下射程 +1;被贴脸则毫无还手之力。"
+    },
+    "mage": {
+      "name": "魔法师",
+      "tier": "fantasy",
+      "move": {
+        "type": "step",
+        "pattern": [[1, 0], [-1, 0], [0, 1], [0, -1]]
+      },
+      "attack": {
+        "type": "splash",
+        "range": 2,
+        "power": 1,
+        "counter": false,
+        "splash": [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]
+      },
+      "action_economy": "tactics",
+      "hp": 1,
+      "value": 4.5,
+      "royal": false,
+      "abilities": [],
+      "flavor": "十字溅射不分敌我,隔山轰击也要掂量友军站位。"
+    }
+  }
+}
