@@ -1,0 +1,30 @@
+docs/GDD.md
+  s_1ba4c6c4cd332f::t_9ee9c563fef9f5 357-358
+  s_1ba4c6c4cd332f::t_195b60bc58a858 229
+  s_1ba4c6c4cd332f::t_d04b35e9e5bfa7 347
+  s_1ba4c6c4cd332f::t_c270ee9f6dddff 119-121,133-134,142-143
+  s_1ba4c6c4cd332f::t_bcc9541235c9ae 324
+  s_1ba4c6c4cd332f::t_0f968e32b63a53 375-376,380
+  s_1ba4c6c4cd332f::t_3e97858d9c2657 435-437
+  s_1ba4c6c4cd332f::t_e2afffd617c08e 204
+  s_1ba4c6c4cd332f::t_56becd5d1b336a 159-182
+  s_1ba4c6c4cd332f::t_901e68086d55fc 221
+  s_1ba4c6c4cd332f::t_a62ec3660dbd50 251-252,256-262
+  s_1ba4c6c4cd332f::t_0b0411f8ec3b8c 327
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "22a32ad014a5ff08a2d378a1a41842240031e2ba",
+  "prompts": {},
+  "sessions": {
+    "s_1ba4c6c4cd332f": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "56129513-476f-4569-a0ef-cc7a9a6668a6",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
