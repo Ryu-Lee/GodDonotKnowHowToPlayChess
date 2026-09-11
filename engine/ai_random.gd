@@ -3,12 +3,12 @@
 class_name AIRandom
 extends RefCounted
 
-static func pick_move(state: MatchState, faction: String, rng: RandomNumberGenerator) -> Move:
+static func pick_move(state: MatchState, faction: String, rng: RandomNumberGenerator) -> Action:
 	var moves := MoveGen.all_legal_moves(state, faction)
 	if moves.is_empty():
 		return null
 	# 简单启发:能吃子吃最大价值子,否则随机
-	var best: Move = null
+	var best: Action = null
 	var best_val := -1.0
 	for mv in moves:
 		var target := state.piece_at(mv.to_x, mv.to_y)

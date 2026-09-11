@@ -12,7 +12,7 @@ const PIECE_R := 14.0
 
 var game: Match
 var selected: Piece = null
-var legal_targets: Dictionary = {}   # Vector2i -> Move
+var legal_targets: Dictionary = {}   # Vector2i -> Action
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(640, 360)
@@ -55,7 +55,7 @@ func _on_click(x: int, y: int) -> void:
 	var clicked := game.state.piece_at(x, y)
 	# 1. 已选且点击目标在合法走法中 => 走子
 	if selected != null and legal_targets.has(Vector2i(x, y)):
-		var mv: Move = legal_targets[Vector2i(x, y)]
+		var mv: Action = legal_targets[Vector2i(x, y)]
 		move_made.emit(mv.piece, mv.to_x, mv.to_y)
 		selected = null
 		legal_targets.clear()

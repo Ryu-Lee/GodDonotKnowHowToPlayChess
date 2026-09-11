@@ -3,4 +3,4 @@
 class_name EngineRoot
 extends RefCounted
 
-const VERSION := "0.1.0-m0"
+const VERSION := "0.2.0-m1"

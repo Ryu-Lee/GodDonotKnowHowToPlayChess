@@ -125,7 +125,7 @@ func _test_pao_screen() -> void:
 	_check(targets.has(Vector2i(6, 7)), "cannon slides along row to (6,7)")
 	_check(not targets.has(Vector2i(8, 7)), "cannon blocked by own cannon at (7,7)")
 	# 吃完验证:apply 后黑马死
-	var mv := Move.new(pao, 1, 0)
+	var mv := Action.new(pao, 1, 0)
 	MoveGen.apply(m.state, mv)
 	_check(_piece(m.state, "black", 1, 0) == null, "black horse captured")
 
@@ -156,31 +156,27 @@ func _test_bing_cross() -> void:
 func _test_flying_general() -> void:
 	print("[flying general]")
 	var m := _new_match()
-	# 清空中线,构造双将对脸:红帅 (4,9) 黑将 (4,0),中间无子
+	# 构造双将对脸:仅保留双将,同列 (4,9) vs (4,0),中间无子
 	for p in m.state.pieces:
-		if p.faction != "red" or not p.type.royal:
+		if not p.type.royal:
 			p.alive = false
-		if p.faction == "red" and p.type.royal:
-			p.x = 4
-			p.y = 9
-		if p.faction == "black" and p.type.royal:
-			p.x = 4
-			p.y = 0
-	# 红帅尝试走到 (4,8):模拟后黑将可"飞"吃 => 非法
 	var jiang := _piece(m.state, "red", 4, 9)
-	var mv := Move.new(jiang, 4, 8)
+	var black_jiang := _piece(m.state, "black", 4, 0)
+	_check(jiang != null and black_jiang != null, "both generals alive on file 4")
+	# 红帅尝试走到 (4,8):模拟后双将对脸 => 非法
+	var mv := Action.new(jiang, 4, 8)
 	_check(not MoveGen.is_legal(m.state, mv), "general cannot step into flying-general line")
 
 func _test_checkmate() -> void:
 	print("[checkmate / stalemate]")
 	var m := _new_match()
-	# 构造极简将死:黑将 (4,0);红车 (4,1) 叫将且黑将无路(两侧被红子占)
+	# 构造极简将死:仅保留双将;红帅 (3,9) 避开同列,红车围死黑将
 	for p in m.state.pieces:
-		if not (p.type.royal and p.faction == "black"):
+		if not p.type.royal:
 			p.alive = false
 	var black_jiang := _piece(m.state, "black", 4, 0)
 	var red_jiang := _piece(m.state, "red", 4, 9)
-	red_jiang.x = 4
+	red_jiang.x = 3
 	red_jiang.y = 9
 	m.state.pieces.append(Piece.new(m.piece_types["ju"], "red", 4, 1))   # 正面叫将
 	m.state.pieces.append(Piece.new(m.piece_types["ju"], "red", 3, 0))   # 封左
@@ -188,7 +184,7 @@ func _test_checkmate() -> void:
 	m.state.pieces.append(Piece.new(m.piece_types["ju"], "red", 4, 2))   # 防黑将吃(4,1)后逃逸
 	m.state.turn = "black"
 	var black_moves := MoveGen.all_legal_moves(m.state, "black")
-	# 黑将可吃 (4,1) 的车:吃后 (4,1),红车 (3,0)(5,0) 不将军它,(4,9) 红帅同列 => 飞将 => 非法。
+	# 黑将可吃 (4,1) 的车:吃后 (4,1) 被红车 (4,2) 将 => 非法;两侧被红车占。
 	# 黑将无任何合法走法 => 困毙/将死
 	_check(black_moves.is_empty(), "black has no legal moves (checkmate)")
 	m.result = WinCond.evaluate(m.state, m.rules)

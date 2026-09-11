@@ -40,15 +40,17 @@ func in_palace(faction: String, x: int, y: int) -> bool:
 		return false
 	return x >= r.position.x and x <= r.end.x and y >= r.position.y and y <= r.end.y
 
-## 是否已过河(相对 faction 方向):红方向上越过河,黑方向下越过河。
+## 是否已过河(相对 faction 方向)。
+## 河界语义:river_rows = [黑侧河岸行, 红侧河岸行],河在两行之间。
+## 经典 [4,5]:红兵到 y<=4(踏上黑岸)为过河;黑卒到 y>=5 为过河。
 func crossed_river(faction: String, y: int) -> bool:
 	if river_rows.is_empty():
 		return false
 	var top: int = river_rows[0]
 	var bottom: int = river_rows[river_rows.size() - 1]
 	if faction == "black":
-		return y > bottom
-	return y < top
+		return y > top
+	return y < bottom
 
 func serialize() -> Dictionary:
 	var cells_arr: Array = []

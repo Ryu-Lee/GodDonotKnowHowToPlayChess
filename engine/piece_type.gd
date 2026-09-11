@@ -12,6 +12,11 @@ var zone: String = ""                 # "", "palace_own", "own_half", "forward_o
 var blockers: Array[String] = []      # 阻挡判定 id: ma_leg / xiang_eye
 var capture_mode: String = ""         # "": 普通占据式; "screen": 炮隔子吃
 var attack_type: String = "displace"
+var attack_pattern: Array[Vector2i] = []   # melee pattern(空 = 四邻)
+var attack_range: int = 0                  # ranged/splash 射程
+var attack_power: int = 1                  # 攻击力
+var counter_attack: bool = false           # melee 被攻击时反伤
+var splash_pattern: Array[Vector2i] = []   # splash 相对中心的打击格
 var action_economy: String = "chess"  # chess / tactics
 var hp: int = 1
 var value: float = 1.0                # 子力值(AI 评估)
@@ -32,6 +37,11 @@ static func from_dict(d: Dictionary) -> PieceType:
 	pt.capture_mode = mv.get("capture_mode", "")
 	var atk: Dictionary = d.get("attack", {})
 	pt.attack_type = atk.get("type", "displace")
+	pt.attack_pattern = _to_vecs(atk.get("pattern", []))
+	pt.attack_range = int(atk.get("range", 0))
+	pt.attack_power = int(atk.get("power", 1))
+	pt.counter_attack = bool(atk.get("counter", false))
+	pt.splash_pattern = _to_vecs(atk.get("splash", []))
 	pt.action_economy = d.get("action_economy", "chess")
 	pt.hp = int(d.get("hp", 1))
 	pt.value = float(d.get("value", 1.0))
