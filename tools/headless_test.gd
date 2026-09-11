@@ -43,6 +43,8 @@ func _run_tests() -> void:
 	_test_terrain_impassable()
 	_test_terrain_oneway()
 	_test_terrain_limited()
+	_test_ruleops()
+	_test_ruleops_undo()
 	print("=== Results: %d passed, %d failed ===" % [pass_count, fail_count])
 
 # ---------------------------------------------------------------- 测试用例
@@ -288,3 +290,70 @@ func _test_terrain_limited() -> void:
 	m.state.turn = "red"
 	var mv2 := m.try_move(bing2, 0, 6)
 	_check(mv2 != null, "another pawn passes through non-limited (0,6) fine")
+
+# ---------------------------------------------------------------- M1 神谕
+
+func _ruleops_with_fantasy() -> Dictionary:
+	# 经典盘 + 幻想棋子类型合并(piece_types 表扩展)
+	var pack := _load()
+	var fantasy := PackLoader.load_pack("res://data/packs/god_fantasy")
+	for key in fantasy["piece_types"].keys():
+		pack["piece_types"][key] = fantasy["piece_types"][key]
+	return pack
+
+func _test_ruleops() -> void:
+	print("[ruleops: add piece / modify cell / temp rule]")
+	var pack := _ruleops_with_fantasy()
+	var m := Match.new(pack["state"], pack["rules"], pack["piece_types"])
+	var ops := RuleOps.new()
+	# 神凭空造黑骑士 (4,4)
+	var ok1 := ops.apply(m.state, m.rules, m.piece_types, "ADD_PIECE",
+		{"type_id": "knight", "faction": "black", "x": 4, "y": 4})
+	_check(ok1 != null, "god summons knight at (4,4)")
+	var knight := m.state.piece_at(4, 4)
+	_check(knight != null and knight.faction == "black", "knight on board")
+	# 骑士 tactics 经济:可移动 + 可攻击各一次
+	var knight_moves := MoveGen.piece_moves(m.state, knight)
+	_check(knight_moves.size() > 0, "knight has rider moves (no leg-block)")
+	m.state.turn = "black"
+	var actions := m.legal_moves_for(knight)
+	var has_move := false
+	for a in actions:
+		if a.is_move():
+			has_move = true
+	_check(has_move, "knight lists MOVE actions")
+	# 神改格:(5,6) 隆起高山 elevation=2
+	var ok2 := ops.apply(m.state, m.rules, m.piece_types, "MODIFY_CELL",
+		{"x": 5, "y": 6, "elevation": 2})
+	_check(ok2 != null, "god raises hill at (5,6)")
+	_check(m.state.board.cell(5, 6).elevation == 2, "hill elevation recorded")
+	# 神颁布临时规则
+	var ok3 := ops.apply(m.state, m.rules, m.piece_types, "ADD_TEMP_RULE",
+		{"id": "no_pao_cross_river", "duration": 3})
+	_check(ok3 != null and m.rules.temp_rules.has("no_pao_cross_river"),
+		"temp rule published")
+
+func _test_ruleops_undo() -> void:
+	print("[ruleops: undo]")
+	var pack := _ruleops_with_fantasy()
+	var m := Match.new(pack["state"], pack["rules"], pack["piece_types"])
+	var ops := RuleOps.new()
+	ops.apply(m.state, m.rules, m.piece_types, "ADD_PIECE",
+		{"type_id": "mage", "faction": "black", "x": 4, "y": 4})
+	ops.apply(m.state, m.rules, m.piece_types, "MODIFY_CELL",
+		{"x": 5, "y": 6, "elevation": 2})
+	ops.apply(m.state, m.rules, m.piece_types, "ADD_TEMP_RULE",
+		{"id": "no_pao_cross_river", "duration": 3})
+	ops.apply(m.state, m.rules, m.piece_types, "SET_WIN_CONDITION",
+		{"types": ["royal_captured"]})
+	ops.apply(m.state, m.rules, m.piece_types, "NERF_PIECE",
+		{"x": 0, "y": 9, "field": "value", "value": 1.0})
+	# 逆序全撤
+	for i in 5:
+		_check(ops.undo_last(m.state, m.rules), "ruleop undo #%d" % (5 - i))
+	_check(m.state.piece_at(4, 4) == null, "mage removed after undo")
+	_check(m.state.board.cell(5, 6).elevation == 0, "hill flattened after undo")
+	_check(not m.rules.temp_rules.has("no_pao_cross_river"), "temp rule revoked")
+	_check(m.rules.win_condition_types.size() == 3, "win conditions restored")
+	_check(m.piece_types["ju"].value == 9.0, "chariot value restored")
+	_check(ops.undo_last(m.state, m.rules) == false, "nothing left to undo")
