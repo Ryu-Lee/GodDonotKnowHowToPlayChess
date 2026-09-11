@@ -1,0 +1,21 @@
+docs/GDD.md
+  s_1ba4c6c4cd332f::t_37a0a11e611f04 57,59,61-63,65-74
+  s_1ba4c6c4cd332f::t_1aac3e59165e57 346,348,352-353
+  s_1ba4c6c4cd332f::t_dd2a667a6ba412 359,363-364
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "61df94f4e4b7b40037b5705a148f9519c65280e6",
+  "prompts": {},
+  "sessions": {
+    "s_1ba4c6c4cd332f": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "56129513-476f-4569-a0ef-cc7a9a6668a6",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
