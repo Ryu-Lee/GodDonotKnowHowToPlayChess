@@ -1,0 +1,31 @@
+README.md
+  s_1ba4c6c4cd332f::t_000e24e022f01e 1-23
+.gitignore
+  s_1ba4c6c4cd332f::t_f3dcfbd353789f 1-18
+docs/GDD.md
+  s_00c6071c509f21::t_9a2d0974ddea53 1-395
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "32cf4f706003da82ce6ed2bf22785e6a09346017",
+  "prompts": {},
+  "sessions": {
+    "s_00c6071c509f21": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "33ee85c3-ce99-4a78-9532-97654588d2ce",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    },
+    "s_1ba4c6c4cd332f": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "56129513-476f-4569-a0ef-cc7a9a6668a6",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
