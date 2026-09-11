@@ -21,3 +21,38 @@
 ## 文档
 
 - [开发案 (GDD)](docs/GDD.md)
+
+## 运行(M0 原型)
+
+需要 [Godot 4.4+](https://godotengine.org)(标准版即可,无需 .NET)。
+
+```bash
+# 打开项目(编辑器)
+godot .
+
+# 直接游玩:本地双人热座(红先)
+godot --path .
+
+# 无头引擎测试(规则/走法/将死/悔棋/自对弈)
+godot --headless --path . --script tools/headless_test.gd
+```
+
+操作:点选棋子 → 点目标格走子(红圈 = 可吃,圆点 = 可走)| `Z` 悔棋 | `R` 重开。
+
+### 代码结构(M0)
+
+```
+engine/            # 纯逻辑(零渲染依赖,可无头运行)
+  board.gd         #   棋盘/河界/九宫/地形格
+  piece_type.gd    #   棋子类型(数据驱动走法定义)
+  piece.gd         #   棋子实例
+  rules.gd         #   规则集
+  movegen.gd       #   合法走法生成(蹩马腿/塞象眼/炮架/过河兵/飞将)
+  win_cond.gd      #   胜负判定(将死/困毙)
+  match.gd         #   对局控制(走子/悔棋/记谱)
+  pack_loader.gd   #   数据包加载
+  ai_random.gd     #   占位 AI(M0)
+data/packs/classic_xiangqi/   # 经典象棋数据包(board/pieces/rules.json)
+presentation/      # 像素棋盘渲染 + 热座交互
+tools/             # 无头测试
+```

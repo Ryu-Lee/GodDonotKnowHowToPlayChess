@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "map_id": "classic_xiangqi",
+  "name": "经典象棋 9×10",
+  "graph_mode": "grid",
+  "width": 9,
+  "height": 10,
+  "river": {
+    "rows": [4, 5]
+  },
+  "palace": {
+    "red": { "x_range": [3, 5], "y_range": [7, 9] },
+    "black": { "x_range": [3, 5], "y_range": [0, 2] }
+  },
+  "cells": [],
+  "setup": {
+    "red": [
+      ["ju", 0, 9], ["ma", 1, 9], ["xiang", 2, 9], ["shi", 3, 9], ["jiang", 4, 9],
+      ["shi", 5, 9], ["xiang", 6, 9], ["ma", 7, 9], ["ju", 8, 9],
+      ["pao", 1, 7], ["pao", 7, 7],
+      ["bing", 0, 6], ["bing", 2, 6], ["bing", 4, 6], ["bing", 6, 6], ["bing", 8, 6]
+    ],
+    "black": [
+      ["ju", 0, 0], ["ma", 1, 0], ["xiang", 2, 0], ["shi", 3, 0], ["jiang", 4, 0],
+      ["shi", 5, 0], ["xiang", 6, 0], ["ma", 7, 0], ["ju", 8, 0],
+      ["pao", 1, 2], ["pao", 7, 2],
+      ["bing", 0, 3], ["bing", 2, 3], ["bing", 4, 3], ["bing", 6, 3], ["bing", 8, 3]
+    ]
+  },
+  "facing": {
+    "red": "up",
+    "black": "down"
+  }
+}

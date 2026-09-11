@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "pack_id": "classic_xiangqi",
+  "piece_types": {
+    "jiang": {
+      "name": "帥/將",
+      "tier": "classic",
+      "move": {
+        "type": "zone_step",
+        "pattern": [[1, 0], [-1, 0], [0, 1], [0, -1]],
+        "zone": "palace_own"
+      },
+      "attack": { "type": "displace" },
+      "action_economy": "chess",
+      "hp": 1,
+      "value": 10000,
+      "royal": true
+    },
+    "shi": {
+      "name": "仕/士",
+      "tier": "classic",
+      "move": {
+        "type": "zone_step",
+        "pattern": [[1, 1], [1, -1], [-1, 1], [-1, -1]],
+        "zone": "palace_own"
+      },
+      "attack": { "type": "displace" },
+      "action_economy": "chess",
+      "hp": 1,
+      "value": 2,
+      "royal": false
+    },
+    "xiang": {
+      "name": "相/象",
+      "tier": "classic",
+      "move": {
+        "type": "leaper",
+        "pattern": [[2, 2], [2, -2], [-2, 2], [-2, -2]],
+        "blockers": ["xiang_eye"],
+        "zone": "own_half"
+      },
+      "attack": { "type": "displace" },
+      "action_economy": "chess",
+      "hp": 1,
+      "value": 2,
+      "royal": false
+    },
+    "ma": {
+      "name": "馬",
+      "tier": "classic",
+      "move": {
+        "type": "leaper",
+        "pattern": [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]],
+        "blockers": ["ma_leg"]
+      },
+      "attack": { "type": "displace" },
+      "action_economy": "chess",
+      "hp": 1,
+      "value": 4,
+      "royal": false
+    },
+    "ju": {
+      "name": "車",
+      "tier": "classic",
+      "move": {
+        "type": "rider",
+        "pattern": [[1, 0], [-1, 0], [0, 1], [0, -1]]
+      },
+      "attack": { "type": "displace" },
+      "action_economy": "chess",
+      "hp": 1,
+      "value": 9,
+      "royal": false
+    },
+    "pao": {
+      "name": "炮",
+      "tier": "classic",
+      "move": {
+        "type": "rider",
+        "pattern": [[1, 0], [-1, 0], [0, 1], [0, -1]],
+        "capture_mode": "screen"
+      },
+      "attack": { "type": "displace" },
+      "action_economy": "chess",
+      "hp": 1,
+      "value": 4.5,
+      "royal": false
+    },
+    "bing": {
+      "name": "兵/卒",
+      "tier": "classic",
+      "move": {
+        "type": "zone_step",
+        "pattern": [[0, 1]],
+        "crossed_pattern": [[0, 1], [1, 0], [-1, 0]],
+        "crossed_when": "river_crossed",
+        "zone": "forward_only_before_cross"
+      },
+      "attack": { "type": "displace" },
+      "action_economy": "chess",
+      "hp": 1,
+      "value": 1,
+      "royal": false
+    }
+  }
+}

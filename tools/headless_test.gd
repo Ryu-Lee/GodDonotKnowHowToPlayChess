@@ -1,0 +1,229 @@
+## 无头测试工具:godot --headless --script tools/headless_test.gd
+## 覆盖:初始局面、各棋子走法、蹩马腿、塞象眼、炮架、过河兵、对将、将死、悔棋、自对弈。
+extends SceneTree
+
+var pass_count := 0
+var fail_count := 0
+
+func _init() -> void:
+	_run_tests()
+	quit(1 if fail_count > 0 else 0)
+
+func _check(cond: bool, name: String) -> void:
+	if cond:
+		pass_count += 1
+		print("  PASS  %s" % name)
+	else:
+		fail_count += 1
+		print("  FAIL  %s" % name)
+
+func _load() -> Dictionary:
+	return PackLoader.load_pack("res://data/packs/classic_xiangqi")
+
+func _piece(state: MatchState, faction: String, x: int, y: int) -> Piece:
+	var p := state.piece_at(x, y)
+	return p if p != null and p.faction == faction else null
+
+func _new_match() -> Match:
+	var pack := _load()
+	return Match.new(pack["state"], pack["rules"], pack["piece_types"])
+
+func _run_tests() -> void:
+	print("=== Headless engine tests (M0) ===")
+	_test_initial_setup()
+	_test_movegen_counts()
+	_test_ma_leg()
+	_test_xiang_eye()
+	_test_pao_screen()
+	_test_bing_cross()
+	_test_flying_general()
+	_test_checkmate()
+	_test_undo()
+	_test_selfplay()
+	print("=== Results: %d passed, %d failed ===" % [pass_count, fail_count])
+
+# ---------------------------------------------------------------- 测试用例
+
+func _test_initial_setup() -> void:
+	print("[initial setup]")
+	var m := _new_match()
+	_check(m.state.pieces.size() == 32, "32 pieces on board")
+	_check(m.state.turn == "red", "red moves first")
+	var red_j: Piece = m.state.piece_at(4, 9)
+	var black_j: Piece = m.state.piece_at(4, 0)
+	_check(red_j != null and red_j.type.royal, "red general at (4,9)")
+	_check(black_j != null and black_j.type.royal, "black general at (4,0)")
+
+func _test_movegen_counts() -> void:
+	print("[movegen counts]")
+	var m := _new_match()
+	var red_moves := MoveGen.all_legal_moves(m.state, "red")
+	# 象棋共识:初始局面双方各有 44 步合法走法
+	_check(red_moves.size() == 44, "initial red legal moves == 44 (got %d)" % red_moves.size())
+	var black_moves := MoveGen.all_legal_moves(m.state, "black")
+	_check(black_moves.size() == 44,
+		"initial black legal moves == 44 (got %d)" % black_moves.size())
+
+func _test_ma_leg() -> void:
+	print("[ma leg block]")
+	var m := _new_match()
+	# 红马 (1,9):向上跳 (0,7) 和 (2,7) 被己方炮 (1,7) 蹩腿?
+	# 马在 (1,9), 走 (0,7): 方向 v=(-1,-2), 大轴 y => 腿在 (1,8), 空,可走
+	# 走 (2,7): v=(1,-2), 腿在 (1,8), 空,可走
+	# 走 (3,8): v=(2,-1), 大轴 x => 腿在 (2,9), 有相 => 蹩
+	var ma := _piece(m.state, "red", 1, 9)
+	_check(ma != null, "red horse found at (1,9)")
+	var moves := MoveGen.piece_moves(m.state, ma)
+	var targets := {}
+	for mv in moves:
+		targets[Vector2i(mv.to_x, mv.to_y)] = true
+	_check(targets.has(Vector2i(0, 7)), "horse can jump to (0,7)")
+	_check(targets.has(Vector2i(2, 7)), "horse can jump to (2,7)")
+	_check(not targets.has(Vector2i(3, 8)), "horse leg blocked by elephant at (2,9) -> no (3,8)")
+	_check(not targets.has(Vector2i(1, 7)), "horse cannot land on own cannon (1,7)")
+
+func _test_xiang_eye() -> void:
+	print("[xiang eye block]")
+	var m := _new_match()
+	# 红相 (2,9) 走 (0,7): 眼在 (1,8),空,可走
+	# 红相 (2,9) 走 (4,7): 眼在 (3,8),空,可走——(4,7)? 有红兵吗?红兵在 (4,6)。(4,7) 空,可走
+	# 走 (2,5)? 那是过河,zone own_half 禁止(河在 4,5)
+	var xiang := _piece(m.state, "red", 2, 9)
+	_check(xiang != null, "red elephant found at (2,9)")
+	var moves := MoveGen.piece_moves(m.state, xiang)
+	var targets := {}
+	for mv in moves:
+		targets[Vector2i(mv.to_x, mv.to_y)] = true
+	_check(targets.has(Vector2i(0, 7)), "elephant to (0,7) ok")
+	_check(targets.has(Vector2i(4, 7)), "elephant to (4,7) ok")
+	_check(not targets.has(Vector2i(2, 5)), "elephant cannot cross river to (2,5)")
+	# 塞象眼:黑士在 (3,0)? 黑象 (2,0) 走 (4,2),眼 (3,1) 空;构造:黑炮 (7,2) 与黑象 (6,0):
+	# 象 (6,0) 走 (8,2): 眼 (7,1) 空 => 可;走 (4,2): 眼 (5,1) 空 => 可。
+	# 直接构造局面:眼 (1,8) 放黑子 => 红相 (2,9) 不能到 (0,7)
+	var blocker := Piece.new(m.piece_types["ju"], "black", 1, 8)
+	m.state.pieces.append(blocker)
+	var moves2 := MoveGen.piece_moves(m.state, xiang)
+	var targets2 := {}
+	for mv in moves2:
+		targets2[Vector2i(mv.to_x, mv.to_y)] = true
+	_check(not targets2.has(Vector2i(0, 7)), "elephant eye blocked at (1,8) -> no (0,7)")
+
+func _test_pao_screen() -> void:
+	print("[pao screen capture]")
+	var m := _new_match()
+	# 红炮 (1,7) 平移可到 (0,7)..(7,7)? (7,7) 是己方炮 => 滑到 (6,7) 停。
+	# 吃:向上方向 (1,6)...(1,3) 有黑卒? (1,3) 无卒,卒在 (0,3)(2,3)...;黑炮在 (1,2)。
+	# 屏吃:红炮 (1,7) 向上,炮架 = 黑卒? 无 —— 第一个遇到的是 (1,2) 黑炮(架),越过,下一个 (1,0) 黑马(可吃)。
+	var pao := _piece(m.state, "red", 1, 7)
+	_check(pao != null, "red cannon found at (1,7)")
+	var moves := MoveGen.piece_moves(m.state, pao)
+	var targets := {}
+	for mv in moves:
+		targets[Vector2i(mv.to_x, mv.to_y)] = true
+	_check(targets.has(Vector2i(1, 0)), "cannon screens over (1,2) to capture horse at (1,0)")
+	_check(not targets.has(Vector2i(1, 2)), "cannon cannot capture screen itself at (1,2)")
+	_check(targets.has(Vector2i(6, 7)), "cannon slides along row to (6,7)")
+	_check(not targets.has(Vector2i(8, 7)), "cannon blocked by own cannon at (7,7)")
+	# 吃完验证:apply 后黑马死
+	var mv := Move.new(pao, 1, 0)
+	MoveGen.apply(m.state, mv)
+	_check(_piece(m.state, "black", 1, 0) == null, "black horse captured")
+
+func _test_bing_cross() -> void:
+	print("[bing river crossing]")
+	var m := _new_match()
+	# 红兵 (4,6): 未过河只可 (4,5);手动放到 (4,4)(已过河,河是 4,5)
+	var bing := _piece(m.state, "red", 4, 6)
+	bing.x = 4
+	bing.y = 4
+	var moves := MoveGen.piece_moves(m.state, bing)
+	var targets := {}
+	for mv in moves:
+		targets[Vector2i(mv.to_x, mv.to_y)] = true
+	_check(targets.has(Vector2i(4, 3)), "crossed pawn moves forward to (4,3)")
+	_check(targets.has(Vector2i(3, 4)), "crossed pawn moves left to (3,4)")
+	_check(targets.has(Vector2i(5, 4)), "crossed pawn moves right to (5,4)")
+	_check(not targets.has(Vector2i(4, 5)), "crossed pawn cannot retreat to (4,5)")
+	# 未过河兵只能前进
+	var bing2 := _piece(m.state, "red", 0, 6)
+	var moves2 := MoveGen.piece_moves(m.state, bing2)
+	var only_forward := true
+	for mv in moves2:
+		if Vector2i(mv.to_x, mv.to_y) != Vector2i(0, 5):
+			only_forward = false
+	_check(moves2.size() == 1 and only_forward, "uncrossed pawn only moves forward")
+
+func _test_flying_general() -> void:
+	print("[flying general]")
+	var m := _new_match()
+	# 清空中线,构造双将对脸:红帅 (4,9) 黑将 (4,0),中间无子
+	for p in m.state.pieces:
+		if p.faction != "red" or not p.type.royal:
+			p.alive = false
+		if p.faction == "red" and p.type.royal:
+			p.x = 4
+			p.y = 9
+		if p.faction == "black" and p.type.royal:
+			p.x = 4
+			p.y = 0
+	# 红帅尝试走到 (4,8):模拟后黑将可"飞"吃 => 非法
+	var jiang := _piece(m.state, "red", 4, 9)
+	var mv := Move.new(jiang, 4, 8)
+	_check(not MoveGen.is_legal(m.state, mv), "general cannot step into flying-general line")
+
+func _test_checkmate() -> void:
+	print("[checkmate / stalemate]")
+	var m := _new_match()
+	# 构造极简将死:黑将 (4,0);红车 (4,1) 叫将且黑将无路(两侧被红子占)
+	for p in m.state.pieces:
+		if not (p.type.royal and p.faction == "black"):
+			p.alive = false
+	var black_jiang := _piece(m.state, "black", 4, 0)
+	var red_jiang := _piece(m.state, "red", 4, 9)
+	red_jiang.x = 4
+	red_jiang.y = 9
+	m.state.pieces.append(Piece.new(m.piece_types["ju"], "red", 4, 1))   # 正面叫将
+	m.state.pieces.append(Piece.new(m.piece_types["ju"], "red", 3, 0))   # 封左
+	m.state.pieces.append(Piece.new(m.piece_types["ju"], "red", 5, 0))   # 封右
+	m.state.pieces.append(Piece.new(m.piece_types["ju"], "red", 4, 2))   # 防黑将吃(4,1)后逃逸
+	m.state.turn = "black"
+	var black_moves := MoveGen.all_legal_moves(m.state, "black")
+	# 黑将可吃 (4,1) 的车:吃后 (4,1),红车 (3,0)(5,0) 不将军它,(4,9) 红帅同列 => 飞将 => 非法。
+	# 黑将无任何合法走法 => 困毙/将死
+	_check(black_moves.is_empty(), "black has no legal moves (checkmate)")
+	m.result = WinCond.evaluate(m.state, m.rules)
+	_check(m.result == WinCond.Result.RED_WIN, "red wins by checkmate")
+
+func _test_undo() -> void:
+	print("[undo]")
+	var m := _new_match()
+	var pao := _piece(m.state, "red", 1, 7)
+	var mv := m.try_move(pao, 1, 0)   # 吃黑马
+	_check(mv != null, "cannon captures horse")
+	_check(_piece(m.state, "black", 1, 0) == null, "horse gone")
+	_check(m.state.turn == "black", "turn flipped to black")
+	m.undo_last()
+	_check(_piece(m.state, "black", 1, 0) != null, "horse restored after undo")
+	_check(m.state.turn == "red", "turn restored to red")
+	_check(m.state.piece_at(1, 7) == pao, "cannon back at (1,7)")
+
+func _test_selfplay() -> void:
+	print("[selfplay x5]")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20260911
+	var finished := 0
+	for i in 5:
+		var m := _new_match()
+		var steps := 0
+		while m.result == WinCond.Result.ONGOING and steps < 500:
+			var mv := AIRandom.pick_move(m.state, m.state.turn, rng)
+			if mv == null:
+				break
+			var applied := m.try_move(mv.piece, mv.to_x, mv.to_y)
+			if applied == null:
+				break
+			steps += 1
+		if m.result != WinCond.Result.ONGOING or steps < 500:
+			finished += 1
+		print("    game %d: %d moves, result=%s" % [i + 1, steps, WinCond.result_name(m.result)])
+	_check(finished > 0, "at least one selfplay game finished within cap")

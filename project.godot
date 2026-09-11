@@ -1,0 +1,26 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+
+config_version=5
+
+[application]
+
+config/name="God Don't Know How To Play Chess"
+config/description="A pixel-art tactics game built on Chinese chess, where a god cheats by rewriting the rules mid-match."
+run/main_scene="res://presentation/main.tscn"
+config/features=PackedStringArray("4.4", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width=640
+window/size/viewport_height=360
+window/stretch/mode="viewport"
+window/stretch/aspect="keep"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

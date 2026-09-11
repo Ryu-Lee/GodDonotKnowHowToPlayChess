@@ -1,0 +1,5 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="16" fill="#2b1d0e"/>
+  <circle cx="64" cy="64" r="44" fill="#c8a24a" stroke="#5a3d16" stroke-width="6"/>
+  <text x="64" y="80" font-size="44" font-family="serif" font-weight="bold" text-anchor="middle" fill="#3a2408">神</text>
+</svg>
