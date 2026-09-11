@@ -1,0 +1,23 @@
+data/packs/god_fantasy/pieces.json
+  s_1ba4c6c4cd332f::t_77731502705bed 1-67
+data/packs/god_fantasy/board.json
+  s_1ba4c6c4cd332f::t_573a28f34c5cd6 1-34
+data/packs/god_fantasy/rules.json
+  s_1ba4c6c4cd332f::t_7ba79c3e3a3428 1-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "e1c0372b44361f3b63305873cbbaef876d284b2f",
+  "prompts": {},
+  "sessions": {
+    "s_1ba4c6c4cd332f": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "56129513-476f-4569-a0ef-cc7a9a6668a6",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
