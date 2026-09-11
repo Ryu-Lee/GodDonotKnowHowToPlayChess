@@ -1,0 +1,52 @@
+presentation/board_view.gd
+  s_1ba4c6c4cd332f::t_392ec77994f1f0 58
+  s_1ba4c6c4cd332f::t_dceed3bef48681 15
+engine/action.gd
+  s_1ba4c6c4cd332f::t_88cbb95f5b6723 1-42
+engine/match.gd
+  s_1ba4c6c4cd332f::t_0e463b92ce779e 42,44,46,52,63-70
+  s_1ba4c6c4cd332f::t_f0d508a60b07b1 1-2,9-10,12-13,20-41,43,48-51,53-59,61-62,72-89,92-112,117-125,129-147,150-151
+engine/ai_random.gd
+  s_1ba4c6c4cd332f::t_e2a9d44ca05289 6,11
+engine/board.gd
+  s_1ba4c6c4cd332f::t_f9488d41595080 43-45,52-53
+engine/engine.gd
+  s_1ba4c6c4cd332f::t_b9d8c3b44e056f 6
+tools/headless_test.gd
+  s_1ba4c6c4cd332f::t_ceeb7bbffd2276 128
+  s_1ba4c6c4cd332f::t_1dccf722228d2d 159,161,164-166
+  s_1ba4c6c4cd332f::t_bf30e6ebd84907 173,175,179,187
+  s_1ba4c6c4cd332f::t_13c169dd9acc74 167
+engine/combat.gd
+  s_1ba4c6c4cd332f::t_7bb27d5c0f6c9c 160-161,164-165
+  s_1ba4c6c4cd332f::t_435f688f97fbf4 1-73,76-159,162-163,166-180
+  s_1ba4c6c4cd332f::t_79e08138e49753 74-75
+engine/piece_type.gd
+  s_1ba4c6c4cd332f::t_ddd4228eec7789 40-44
+  s_1ba4c6c4cd332f::t_505c4959a93632 15-19
+engine/movegen.gd
+  s_1ba4c6c4cd332f::t_0cf21d80ca0641 3,9-14,21-22,41,55,60,65,69,87,102,106,113,125,133-137,140-172,174-176,180,199,209-211,213-218,237,240-242,244-254,256-265,268-270,272-273,278-281,283,286-291
+  s_1ba4c6c4cd332f::t_219f3e6203e97a 193
+  s_1ba4c6c4cd332f::t_d6a38e1758e45b 26,28,42-50
+  s_1ba4c6c4cd332f::t_b383f48267b199 236,238-239,243
+  s_1ba4c6c4cd332f::t_7e5c8254ea522c 200,206-208,219-220,223-234
+  s_1ba4c6c4cd332f::t_f5372a3d3d6ee9 138-139
+  s_1ba4c6c4cd332f::t_26e2a4a1af8e5d 107,117-118,121,127,129-132
+  s_1ba4c6c4cd332f::t_0046f521c5a852 235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "54066d1cedadc839b5b2781c4c90e52fe7b8ba03",
+  "prompts": {},
+  "sessions": {
+    "s_1ba4c6c4cd332f": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "56129513-476f-4569-a0ef-cc7a9a6668a6",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
