@@ -1,0 +1,25 @@
+engine/rule_ops.gd
+  s_1ba4c6c4cd332f::t_c3477ca2354b85 1-8,11,17-20,25-57,61-295
+  s_1ba4c6c4cd332f::t_0be87c049c7cab 9-10,21-24
+  s_1ba4c6c4cd332f::t_d6da66c8de6784 12-16
+  s_1ba4c6c4cd332f::t_8facc65c688a1a 58-60
+tools/headless_test.gd
+  s_1ba4c6c4cd332f::t_2625fe0a5bfe97 46-47
+  s_1ba4c6c4cd332f::t_e3b27789dda585 293-359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "503dc3ac234503a3fa2a7ab92ead62612007cb6c",
+  "prompts": {},
+  "sessions": {
+    "s_1ba4c6c4cd332f": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "56129513-476f-4569-a0ef-cc7a9a6668a6",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
