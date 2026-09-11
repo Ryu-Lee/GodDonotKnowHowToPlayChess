@@ -1,0 +1,84 @@
+engine/move.gd
+  s_1ba4c6c4cd332f::t_99c3dedb9d63a7 1-23
+data/packs/classic_xiangqi/rules.json
+  s_1ba4c6c4cd332f::t_d264a2f752dcc4 1-23
+engine/piece.gd
+  s_1ba4c6c4cd332f::t_7345707232c743 1-29
+engine/match.gd
+  s_1ba4c6c4cd332f::t_f42418c516c06d 1-48
+tools/headless_test.gd
+  s_1ba4c6c4cd332f::t_cf6cfd8f4bf4d7 52-55
+  s_1ba4c6c4cd332f::t_aba504b504cd98 1-51,56-60,62-63,66-184,189-229
+  s_1ba4c6c4cd332f::t_043fc4ef22ef39 185-188
+  s_1ba4c6c4cd332f::t_d7c28d94362b1c 61,64-65
+presentation/main.gd
+  s_1ba4c6c4cd332f::t_4c6f02070bc607 4,11,15,32-33,37,40,44,46,53-54
+  s_1ba4c6c4cd332f::t_3c1b131f0176dd 1-3,5-10,12-14,16-31,34-36,38-39,41-43,45,47-50,52,55-57
+  s_1ba4c6c4cd332f::t_aeb89f28ef6f3d 51
+engine/rules.gd
+  s_1ba4c6c4cd332f::t_e333f14dda6748 1-27
+engine/pack_loader.gd
+  s_1ba4c6c4cd332f::t_35ea7a5d1f79dd 10
+  s_1ba4c6c4cd332f::t_af8ac538f303b7 1-9,11-14,19-42,48-80
+  s_1ba4c6c4cd332f::t_06956755b190e7 15-18
+  s_1ba4c6c4cd332f::t_06d18e2d773edc 43-47
+project.godot
+  s_1ba4c6c4cd332f::t_b90951875d5af7 1-26
+data/packs/classic_xiangqi/board.json
+  s_1ba4c6c4cd332f::t_d2b44c90c133ff 1-34
+presentation/board_view.gd
+  s_1ba4c6c4cd332f::t_ae6b8211b2b128 1-12,14-21,23-32,34-43,45-54,56-64,66-67,69-77,79-84,86-87,92-121,123-139,151-157,159-162
+  s_1ba4c6c4cd332f::t_4c6f02070bc607 13,22,33,44,55,65,68,78,85,122,158
+  s_1ba4c6c4cd332f::t_5dadfe2282136a 140-150
+  s_1ba4c6c4cd332f::t_0e3afb09c431a9 88-91
+engine/win_cond.gd
+  s_1ba4c6c4cd332f::t_de1d5e2ddfdb17 1-7,9-30
+  s_1ba4c6c4cd332f::t_0105d16f50486c 8
+engine/piece_type.gd
+  s_1ba4c6c4cd332f::t_c5f4aa75e7380e 1-52
+README.md
+  s_1ba4c6c4cd332f::t_05571d4d5616c0 24-58
+engine/ai_random.gd
+  s_1ba4c6c4cd332f::t_9f2b2479c97a2d 1-20
+data/packs/classic_xiangqi/pieces.json
+  s_1ba4c6c4cd332f::t_5ce50856b08e33 1-106
+engine/board.gd
+  s_1ba4c6c4cd332f::t_a35b652e1244ba 11,13
+  s_1ba4c6c4cd332f::t_3040752b13f586 7-8,12
+  s_1ba4c6c4cd332f::t_a81efe8b11e9e0 27-29,43,73-80
+  s_1ba4c6c4cd332f::t_79bee1f946a112 9-10
+  s_1ba4c6c4cd332f::t_c1574bec4f37da 1-6,14-26,30-42,44-72
+engine/engine.gd
+  s_1ba4c6c4cd332f::t_e23c05d8050df3 1-6
+presentation/main.tscn
+  s_1ba4c6c4cd332f::t_2946d76802d86b 1-10
+engine/movegen.gd
+  s_1ba4c6c4cd332f::t_10ddc36d05df3f 85
+  s_1ba4c6c4cd332f::t_66ca4097d2dbf1 69
+  s_1ba4c6c4cd332f::t_7e13313bbb542a 1-30,32-33,35-43,45-57,59-68,70-84,86-115,119-144,146-203
+  s_1ba4c6c4cd332f::t_3b9d44a05aecb6 44
+  s_1ba4c6c4cd332f::t_de9968715eac8c 58
+  s_1ba4c6c4cd332f::t_db9c7565579076 31,34
+  s_1ba4c6c4cd332f::t_26d7cdc39df424 116-118
+  s_1ba4c6c4cd332f::t_9709ef52038cad 145
+icon.svg
+  s_1ba4c6c4cd332f::t_9ec8a5a8e2e7f0 1-5
+engine/match_state.gd
+  s_1ba4c6c4cd332f::t_96c72db7a0fb3e 1-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "dd2c40efdb7586dc71bbc7aa6702986f65ba19a2",
+  "prompts": {},
+  "sessions": {
+    "s_1ba4c6c4cd332f": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "56129513-476f-4569-a0ef-cc7a9a6668a6",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
