@@ -51,6 +51,7 @@ func _run_tests() -> void:
 	_test_win_cond_variants()
 	_test_scenario()
 	_test_ai_search()
+	_test_ai_search_perf()
 	print("=== Results: %d passed, %d failed ===" % [pass_count, fail_count])
 
 # ---------------------------------------------------------------- 测试用例
@@ -576,3 +577,15 @@ func _test_ai_search() -> void:
 	var act2 := ai2.pick_action(m.state, m.rules, "red")
 	_check(act2 != null and act2.piece == red_ju and act2.to_x == 0 and act2.to_y == 0,
 		"AI captures hanging chariot")
+
+func _test_ai_search_perf() -> void:
+	print("[ai search perf]")
+	var m := _new_match()
+	var ai := AISearch.new(2)
+	var t0 := Time.get_ticks_msec()
+	var act := ai.pick_action(m.state, m.rules, "red")
+	var ms := Time.get_ticks_msec() - t0
+	_check(act != null, "depth-2 search returns a move")
+	_check(ms < 2000, "depth-2 full-board search under 2s (took %d ms)" % ms)
+	_check(ai.nodes <= AISearch.NODE_CAP, "node cap respected (%d nodes)" % ai.nodes)
+	print("  ...depth=2 nodes=%d time=%dms" % [ai.nodes, ms])

@@ -20,6 +20,8 @@ var battle: Dictionary = {}
 var ai: AISearch = null
 ## AI 难度档(搜索深度)。
 var ai_depth := 2
+## AI 搜索进行中(防重入:等待期间玩家又落子/悔棋)。
+var _ai_busy := false
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(640, 360)
@@ -101,9 +103,20 @@ func _on_move_made(piece: Piece, to_x: int, to_y: int) -> void:
 	_refresh()
 	_ai_move()
 
-## AI 行动(敌方回合)。
+## AI 行动(敌方回合)。推迟一帧再搜索:玩家落子先渲染,避免画面冻结。
+## 重入保护:等待期间局面已变(玩家悔棋/重打/再落子)则放弃本次应手。
 func _ai_move() -> void:
-	if ai == null:
+	if ai == null or _ai_busy:
+		return
+	if game.result != WinCond.Result.ONGOING or game.state.turn != "black":
+		return
+	_ai_busy = true
+	_do_ai_move.call_deferred()
+
+func _do_ai_move() -> void:
+	await get_tree().process_frame
+	_ai_busy = false
+	if ai == null or game == null:
 		return
 	if game.result != WinCond.Result.ONGOING or game.state.turn != "black":
 		return

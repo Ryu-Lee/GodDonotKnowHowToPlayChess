@@ -160,10 +160,15 @@ func _apply_resolution(idx: int) -> void:
 	if idx < 0 or idx >= RESOLUTIONS.size():
 		return
 	var r := RESOLUTIONS[idx]
-	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
+	var mode := DisplayServer.window_get_mode()
+	if mode == DisplayServer.WINDOW_MODE_FULLSCREEN:
 		# 全屏下只记录选择,退出全屏时生效
 		_save_settings(r)
 		return
+	if mode == DisplayServer.WINDOW_MODE_MAXIMIZED:
+		# 最大化窗口 set_size 是静默 no-op:先退回窗口模式再改尺寸
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		_fullscreen_btn.button_pressed = false
 	DisplayServer.window_set_size(r)
 	_center_window()
 	_save_settings()
