@@ -11,6 +11,7 @@ var board_view: BoardView
 var status_label: Label
 var hint_label: Label
 var decree_label: Label
+var mode_buttons: Dictionary = {}   # Mode -> Button
 var mode: int = Mode.CLASSIC_HOTSEAT
 var ai: AISearch
 ## AI 难度档(搜索深度)。
@@ -40,6 +41,26 @@ func _layout() -> void:
 	decree_label.add_theme_font_size_override("font_size", 11)
 	decree_label.add_theme_color_override("font_color", Color("#d9a8ff"))
 	add_child(decree_label)
+
+	# 模式切换按钮(右上角):经典热座 / 神的试炼
+	_add_mode_button("经典象棋", Vector2(470, 2), Mode.CLASSIC_HOTSEAT)
+	_add_mode_button("神的试炼", Vector2(552, 2), Mode.GOD_TRIAL)
+
+func _add_mode_button(text: String, pos: Vector2, m: int) -> void:
+	var btn := Button.new()
+	btn.text = text
+	btn.position = pos
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.add_theme_font_size_override("font_size", 12)
+	btn.pressed.connect(func() -> void:
+		if mode != m:
+			if m == Mode.GOD_TRIAL:
+				start_god_trial()
+			else:
+				start_classic()
+	)
+	add_child(btn)
+	mode_buttons[m] = btn
 
 # ---------------------------------------------------------------- 模式启动
 
@@ -149,6 +170,10 @@ func _shake() -> void:
 # ---------------------------------------------------------------- 状态栏
 
 func _refresh() -> void:
+	# 模式按钮态:当前模式高亮,另一侧变暗
+	for m in mode_buttons.keys():
+		var btn: Button = mode_buttons[m]
+		btn.modulate = Color(1, 1, 1) if m == mode else Color(0.5, 0.5, 0.5)
 	var title := "神明不会下棋 M1"
 	if mode == Mode.GOD_TRIAL:
 		title += "  ·  神的试炼"
