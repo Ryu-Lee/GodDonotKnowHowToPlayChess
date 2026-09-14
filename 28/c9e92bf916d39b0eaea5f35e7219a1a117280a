@@ -1,0 +1,43 @@
+presentation/main.gd
+  s_09245e0080122e::t_5a020ea67d2a6a 1-3,6-9,11-14,17-20,22-25,27-30,32,34,36,38-41,43-46,48-51,53-55,57,59,63
+  s_09245e0080122e::t_22b8757b6984bf 60,64-65
+  s_09245e0080122e::t_54a4dbba33a195 33
+presentation/title_screen.gd
+  s_09245e0080122e::t_78ebfd1920b975 1-59
+default_bus_layout.tres
+  s_09245e0080122e::t_652dda469b8397 1-15
+presentation/battle_screen.gd
+  s_09245e0080122e::t_1265f0de7e8109 180-181
+  s_09245e0080122e::t_e1d105368912f1 183-185
+  s_09245e0080122e::t_3ce859f8cdf873 1-179,186-194
+  s_09245e0080122e::t_4f44f0595adf9c 182
+data/campaigns/gods_trial.json
+  s_09245e0080122e::t_4143aad8c59b04 1-30
+presentation/campaign_screen.gd
+  s_09245e0080122e::t_aa426e32937baf 1-100
+presentation/settings_menu.gd
+  s_09245e0080122e::t_b20867d7d398d7 113
+  s_09245e0080122e::t_3a2406acab9f98 1-58,60-112,114-164,166-196,198-204,209-241
+  s_09245e0080122e::t_0a3ef29bf00c42 59
+  s_09245e0080122e::t_961c160c6943c1 165
+  s_09245e0080122e::t_e820140c0478ae 242-247
+  s_09245e0080122e::t_b3dddc33b63f82 197,205-208
+project.godot
+  s_09245e0080122e::t_a80793c991b5ff 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "28c9e92bf916d39b0eaea5f35e7219a1a117280a",
+  "prompts": {},
+  "sessions": {
+    "s_09245e0080122e": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "fae9a65b-321b-4199-80a3-f1ee799570ff",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
