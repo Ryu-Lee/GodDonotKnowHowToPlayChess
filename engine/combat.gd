@@ -123,7 +123,7 @@ static func _has_line_of_sight(state: MatchState, x0: int, y0: int, x1: int, y1:
 	var board := state.board
 	var from_h := board.cell(x0, y0).elevation
 	var to_h := board.cell(x1, y1).elevation
-	var min_h := max(from_h, to_h)
+	var min_h: int = max(from_h, to_h)
 	var dx := absi(x1 - x0)
 	var dy := absi(y1 - y0)
 	var sx := 1 if x1 > x0 else -1
