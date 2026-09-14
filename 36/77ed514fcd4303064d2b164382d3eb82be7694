@@ -1,0 +1,82 @@
+engine/board.gd
+  s_09245e0080122e::t_2356c719ad904b 69-72,76-77,80-81,91
+  s_09245e0080122e::t_c8d20456e97c8c 109
+  s_09245e0080122e::t_39b5b02325cdc7 38-47,49-50,52-53
+  s_09245e0080122e::t_bcfff0eab38ed7 67-68,73-75,78-79,82-90
+  s_09245e0080122e::t_499fe980b216ae 10-11
+presentation/board_view.gd
+  s_09245e0080122e::t_0e6dc7850f7704 58,60-63,68,72-73
+  s_09245e0080122e::t_964a3299bfecb2 205-208,218,220-224,226-230
+  s_09245e0080122e::t_77cb5270615070 178,183-189
+  s_09245e0080122e::t_975be81261ed7f 144,146-147,149-170
+  s_09245e0080122e::t_b6fce42730135f 16-17
+  s_09245e0080122e::t_fee32828aa7893 85,89-113
+  s_09245e0080122e::t_abeb5baeb72d9b 114
+tools/headless_test.gd
+  s_09245e0080122e::t_b09d8ab4b770db 53
+  s_09245e0080122e::t_3ad0e8d66a53c6 43,47,50-52
+  s_1ba4c6c4cd332f::t_b04b6814a56ed7 552-578
+  s_09245e0080122e::t_67b891ffecfd3f 238-264
+  s_09245e0080122e::t_43ee7f8d6f536e 327-349
+  s_09245e0080122e::t_61a7b2f979f32e 350-486
+  s_09245e0080122e::t_d98331ac9084f6 549
+data/scenarios/god_trial.json
+  s_09245e0080122e::t_029028641ad6c4 1-66
+engine/match_state.gd
+  s_09245e0080122e::t_02fb8bdb9ccdf9 70
+  s_09245e0080122e::t_c1f6408250c4a4 6-7
+  s_09245e0080122e::t_9e526fcdcc6972 11
+  s_09245e0080122e::t_d32d1c4ca5b5d5 43,55
+engine/scenario.gd
+  s_09245e0080122e::t_3d77ffe5ea5551 1-73
+engine/match.gd
+  s_09245e0080122e::t_3ea9d602c75a68 153
+  s_09245e0080122e::t_1daba9419773f2 41-43
+  s_09245e0080122e::t_51547ac5bd09ce 20
+  s_09245e0080122e::t_1c370e195b88f6 140,145,147-149
+  s_09245e0080122e::t_f971c81a00f86c 9-10
+  s_09245e0080122e::t_d0a81d2f85d183 40,44-45
+engine/pack_loader.gd
+  s_09245e0080122e::t_3715366b1c3c7c 43-47
+engine/rule_ops.gd
+  s_09245e0080122e::t_ae46be97a02452 250-254,257-259,261
+  s_09245e0080122e::t_8ea28ed2c0991d 147-149,155-156,159,162,164,166,168-177
+engine/rules.gd
+  s_09245e0080122e::t_1f63ece8cf6e00 1-2,6-24,27-33,39-43,45,52-53,55-79
+presentation/main.gd
+  s_09245e0080122e::t_fd95a6b2de9eca 1-2,5-8,13-17,20-21,23-24,38-51,54-75,77-104,107-150,152-154,156-157,159-165,172,175-182
+engine/ai_search.gd
+  s_1ba4c6c4cd332f::t_ae21dd27b9b496 1-120
+engine/win_cond.gd
+  s_09245e0080122e::t_7ae52b905efa30 1-2,8-38,40,42,44-46,48,50-73,75-97,100-132
+  s_09245e0080122e::t_97398587666b08 133
+engine/movegen.gd
+  s_09245e0080122e::t_914258f80a089c 140-156
+  s_09245e0080122e::t_34487bc1229287 89-90
+  s_09245e0080122e::t_9d0cdb0d50e424 62-63
+  s_09245e0080122e::t_4fb5dabe9497ef 119-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "3677ed514fcd4303064d2b164382d3eb82be7694",
+  "prompts": {},
+  "sessions": {
+    "s_09245e0080122e": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "fae9a65b-321b-4199-80a3-f1ee799570ff",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    },
+    "s_1ba4c6c4cd332f": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "56129513-476f-4569-a0ef-cc7a9a6668a6",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
