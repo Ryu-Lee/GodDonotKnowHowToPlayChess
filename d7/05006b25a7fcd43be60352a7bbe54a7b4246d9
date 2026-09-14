@@ -1,0 +1,30 @@
+engine/ai_search.gd
+  s_09245e0080122e::t_520156c89c2f8e 52-53
+  s_09245e0080122e::t_f441cc6200aac3 3-5,11-12,26,32,44,46-49,51,54,56,58-59,69-89,93-94,103-113,129-151,153,156-157,163,165-167,172-174
+  s_09245e0080122e::t_963ced4f7a8c35 10,23-25,29,37-38,152
+presentation/battle_screen.gd
+  s_09245e0080122e::t_06dc5d79362d5f 106-107,109-119
+  s_09245e0080122e::t_76974f3f457f92 23-24
+presentation/settings_menu.gd
+  s_09245e0080122e::t_006fb830aef048 163-164,168-171
+tools/headless_test.gd
+  s_09245e0080122e::t_d01dd104b75231 584,588-589,591
+  s_09245e0080122e::t_5a2bd538f44c9e 54
+  s_09245e0080122e::t_6de8e73c715ec0 580-583,585-587,590
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "d705006b25a7fcd43be60352a7bbe54a7b4246d9",
+  "prompts": {},
+  "sessions": {
+    "s_09245e0080122e": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "fae9a65b-321b-4199-80a3-f1ee799570ff",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
