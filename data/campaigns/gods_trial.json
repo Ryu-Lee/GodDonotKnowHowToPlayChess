@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "campaign_id": "gods_trial",
+  "name": "神明不会下棋",
+  "description": "少年执红,神执黑。从经典对弈到神的耍赖,一步步见证棋盘被改写。",
+  "battles": [
+    {
+      "id": "battle_01",
+      "name": "第一战 · 开局",
+      "description": "神还在假装守规矩——一盘老老实实的象棋。熟悉走子,热热身。",
+      "base_pack": "classic_xiangqi",
+      "extra_packs": [],
+      "player_faction": "red",
+      "enemy_faction": "black",
+      "ai": { "enabled": false, "depth": 2 },
+      "scenario": ""
+    },
+    {
+      "id": "battle_02",
+      "name": "第二战 · 神的试炼",
+      "description": "神不再掩饰:造子、隆山、断路、神谕、改写胜负。存活下去。",
+      "base_pack": "classic_xiangqi",
+      "extra_packs": ["god_fantasy"],
+      "player_faction": "red",
+      "enemy_faction": "black",
+      "ai": { "enabled": true, "depth": 2 },
+      "scenario": "res://data/scenarios/god_trial.json"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ config/description="A pixel-art tactics game built on Chinese chess, where a god
 run/main_scene="res://presentation/main.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="res://icon.svg"
+audio/buses/default_bus_layout="res://default_bus_layout.tres"
 
 [display]
 
