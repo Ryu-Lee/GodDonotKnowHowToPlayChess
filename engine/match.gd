@@ -6,6 +6,8 @@ extends RefCounted
 var state: MatchState
 var rules: RuleSet
 var piece_types: Dictionary
+## 神的剧本(可选):回合开始神谕阶段由此触发。
+var scenario: Scenario = null
 ## 完整行动历史(含攻击),悔棋用。
 var history: Array[Action] = []
 var result: int = WinCond.Result.ONGOING
@@ -15,6 +17,7 @@ var acted: Dictionary = {}
 func _init(s: MatchState, r: RuleSet, ptypes: Dictionary) -> void:
 	state = s
 	rules = r
+	state.rules = r
 	piece_types = ptypes
 
 # ---------------------------------------------------------------- 回合结构
@@ -34,6 +37,12 @@ func _ends_turn(p: Piece, kind: int) -> bool:
 
 func _pass_turn() -> void:
 	acted.clear()
+	# 黑方行动结束 = 整回合结束:临时规则倒计时 + 神谕阶段(下一回合开始)
+	if state.turn == "black":
+		state.full_rounds += 1
+		rules.tick_temp_rules()
+		if scenario != null:
+			scenario.on_round_start(state, rules, piece_types)
 	state.turn = "black" if state.turn == "red" else "red"
 
 # ---------------------------------------------------------------- 行动 API
@@ -128,18 +137,20 @@ func undo_last() -> bool:
 	return true
 
 ## 重放历史恢复回合状态(悔棋后)。
-## limited 地形消费随重放重新结算(consumed_pass 幂等保证不重复扣)。
+## limited 地形消费:重放前按原始消费记录逐条返还(否则重放会重复扣)。
 func _rebuild_turn_state() -> void:
 	acted.clear()
 	state.turn = "red"
 	state.move_count = 0
-	var replayed: Array[Action] = []
+	# 逆序返还所有已消费的 limited 通行,重放时再按当下棋盘状态重新结算
 	for act in history:
-		act.consumed_pass = false
-		replayed.append(act)
+		if act.is_move():
+			MoveGen.refund_pass(state, act)
+	var replayed: Array[Action] = history.duplicate()
 	history.clear()
 	for act in replayed:
 		# 纯逻辑回放:不再校验,直接按经济结算
+		act.consumed_pass = false
 		if act.is_move():
 			MoveGen.apply(state, act)
 			MoveGen.consume_pass(state, act)

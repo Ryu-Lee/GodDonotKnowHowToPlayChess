@@ -144,31 +144,37 @@ func _do_add_temp_rule(rules: RuleSet, params: Dictionary, entry: Log) -> bool:
 	var id := String(params.get("id", ""))
 	if id.is_empty():
 		return false
-	entry.rollback = {"had": rules.temp_rules.has(id)}
-	if rules.temp_rules.has(id):
-		rules.temp_rules.erase(id)
-	entry.rollback["was_last"] = true
-	rules.temp_rules.append(id)
+	entry.rollback = {"had": rules.temp_rules.has(id),
+		"old": rules.temp_rules.get(id, {}).duplicate()}
+	rules.add_temp_rule(id, int(params.get("duration", 0)))
 	return true
 
 ## params: {id}
 func _do_remove_temp_rule(rules: RuleSet, params: Dictionary, entry: Log) -> bool:
 	var id := String(params.get("id", ""))
-	entry.rollback = {"had": rules.temp_rules.has(id)}
+	entry.rollback = {"had": rules.temp_rules.has(id),
+		"old": rules.temp_rules.get(id, {}).duplicate()}
 	if not rules.temp_rules.has(id):
 		return false
-	rules.temp_rules.erase(id)
+	rules.remove_temp_rule(id)
 	return true
 
-## params: {types: ["royal_captured", ...]}
+## params: {conditions: [{id?, type, ...params}]} 或 {types: ["royal_captured", ...]}(无参简写)
 func _do_set_win_condition(rules: RuleSet, params: Dictionary, entry: Log) -> bool:
+	var conds: Array = params.get("conditions", [])
 	var types: Array = params.get("types", [])
-	if types.is_empty():
+	if conds.is_empty() and types.is_empty():
 		return false
-	entry.rollback = {"types": rules.win_condition_types.duplicate()}
-	rules.win_condition_types.clear()
-	for t in types:
-		rules.win_condition_types.append(String(t))
+	entry.rollback = {"conditions": rules.win_conditions.duplicate()}
+	rules.win_conditions.clear()
+	if not conds.is_empty():
+		for c in conds:
+			rules.win_conditions.append(RuleSet.WinCondition.from_dict(c))
+	else:
+		for t in types:
+			var wc := RuleSet.WinCondition.new()
+			wc.type = String(t)
+			rules.win_conditions.append(wc)
 	return true
 
 # ---------------------------------------------------------------- 强化/削弱
@@ -241,13 +247,18 @@ func undo_last(state: MatchState, rules: RuleSet) -> bool:
 		"RESIZE_BOARD":
 			_restore_board(state, entry.rollback)
 		"ADD_TEMP_RULE":
-			if not bool(entry.rollback["had"]):
-				rules.temp_rules.erase(entry.payload.get("id", ""))
+			var rule_id := String(entry.payload.get("id", ""))
+			if bool(entry.rollback["had"]):
+				rules.temp_rules[rule_id] = entry.rollback["old"]
+			else:
+				rules.temp_rules.erase(rule_id)
 		"REMOVE_TEMP_RULE":
 			if bool(entry.rollback["had"]):
-				rules.temp_rules.append(String(entry.payload.get("id", "")))
+				rules.temp_rules[String(entry.payload.get("id", ""))] = entry.rollback["old"]
+			else:
+				rules.temp_rules.erase(String(entry.payload.get("id", "")))
 		"SET_WIN_CONDITION":
-			rules.win_condition_types = entry.rollback["types"]
+			rules.win_conditions = entry.rollback["conditions"]
 		"GRANT_ABILITY":
 			var pt_g: PieceType = entry.rollback["piece_type"]
 			pt_g.abilities = entry.rollback["abilities"]

@@ -40,11 +40,17 @@ func _run_tests() -> void:
 	_test_checkmate()
 	_test_undo()
 	_test_selfplay()
+	_test_palace_bounds()
 	_test_terrain_impassable()
 	_test_terrain_oneway()
 	_test_terrain_limited()
+	_test_terrain_limited_undo()
 	_test_ruleops()
 	_test_ruleops_undo()
+	_test_temp_rule_effect()
+	_test_win_cond_variants()
+	_test_scenario()
+	_test_ai_search()
 	print("=== Results: %d passed, %d failed ===" % [pass_count, fail_count])
 
 # ---------------------------------------------------------------- 测试用例
@@ -229,6 +235,33 @@ func _test_selfplay() -> void:
 		print("    game %d: %d moves, result=%s" % [i + 1, steps, WinCond.result_name(m.result)])
 	_check(finished > 0, "at least one selfplay game finished within cap")
 
+# ---------------------------------------------------------------- M1 九宫修复
+
+func _test_palace_bounds() -> void:
+	print("[palace bounds]")
+	var m := _new_match()
+	# 帅 (4,9) 只能走到九宫内:(4,8)(3,9)(5,9);不可越出九宫(x=6 / y>9 之外 / y=6)
+	var jiang := _piece(m.state, "red", 4, 9)
+	_check(jiang != null, "red general found")
+	# 直接验证 in_palace 闭区间语义:红宫 x∈[3,5] y∈[7,9]
+	_check(m.state.board.in_palace("red", 3, 7), "red palace contains (3,7)")
+	_check(m.state.board.in_palace("red", 5, 9), "red palace contains (5,9)")
+	_check(not m.state.board.in_palace("red", 6, 8), "red palace excludes x=6")
+	_check(not m.state.board.in_palace("red", 4, 6), "red palace excludes y=6")
+	_check(not m.state.board.in_palace("black", 3, 3), "black palace excludes y=3")
+	# 士 (3,9):只能在宫内走斜线
+	var shi := _piece(m.state, "red", 3, 9)
+	shi.x = 5
+	shi.y = 7   # 移到宫内另一角 (5,7)
+	var moves := MoveGen.piece_moves(m.state, shi)
+	for mv in moves:
+		_check(m.state.board.in_palace("red", mv.to_x, mv.to_y),
+			"advisor stays in palace ((%d,%d))" % [mv.to_x, mv.to_y])
+	# 帅走法全部在宫内
+	for mv in MoveGen.piece_moves(m.state, jiang):
+		_check(m.state.board.in_palace("red", mv.to_x, mv.to_y),
+			"general stays in palace ((%d,%d))" % [mv.to_x, mv.to_y])
+
 # ---------------------------------------------------------------- M1 地形
 
 func _test_terrain_impassable() -> void:
@@ -291,7 +324,166 @@ func _test_terrain_limited() -> void:
 	var mv2 := m.try_move(bing2, 0, 6)
 	_check(mv2 != null, "another pawn passes through non-limited (0,6) fine")
 
-# ---------------------------------------------------------------- M1 神谕
+func _test_terrain_limited_undo() -> void:
+	print("[terrain: limited undo regression]")
+	var m := _new_match()
+	var bing := _piece(m.state, "red", 0, 6)
+	m.state.board.cell(0, 5).pass_rule = "limited"
+	m.state.board.cell(0, 5).pass_limit = 2
+	m.try_move(bing, 0, 5)                              # limit 2→1
+	var bb := _piece(m.state, "black", 8, 3)
+	m.try_move(bb, 8, 4)
+	var rb := _piece(m.state, "red", 8, 6)
+	m.try_move(rb, 8, 5)                                # 本回合红又走一步
+	# 悔棋 3 次(含黑方那步):limited 次数应全额返还,不会因重放而重复扣
+	m.undo_last()
+	m.undo_last()
+	m.undo_last()
+	_check(m.state.board.cell(0, 5).pass_limit == 2,
+		"pass_limit fully refunded after undo (got %d)" % m.state.board.cell(0, 5).pass_limit)
+	_check(m.state.piece_at(0, 6) == bing, "pawn back at (0,6)")
+	m.state.turn = "red"
+	var re_enter := m.try_move(bing, 0, 5)
+	_check(re_enter != null and m.state.board.cell(0, 5).pass_limit == 1,
+		"undo left the bridge intact (2 uses, 1 after re-enter)")
+
+# ---------------------------------------------------------------- M1 临时规则生效
+
+func _test_temp_rule_effect() -> void:
+	print("[temp rule: no_pao_cross_river]")
+	var m := _new_match()
+	var pao := _piece(m.state, "red", 1, 7)
+	# 神颁布:本局炮不可过河(3 整回合)
+	m.rules.add_temp_rule("no_pao_cross_river", 3)
+	# 红炮向前(向上)滑:河对岸 y<=4 的格全禁;y>=5 仍可走
+	var moves := MoveGen.piece_moves(m.state, pao)
+	var has_crossed := false
+	var has_own_side := false
+	for mv in moves:
+		if mv.to_y <= 4:
+			has_crossed = true
+		elif mv.to_y >= 5:
+			has_own_side = true
+	_check(not has_crossed, "cannon cannot cross river under temp rule")
+	_check(has_own_side, "cannon still moves on own side")
+	# 车不受该规则影响
+	var ju := _piece(m.state, "red", 0, 9)
+	var ju_moves := MoveGen.piece_moves(m.state, ju)
+	var ju_cross_ok := false
+	for mv in ju_moves:
+		if mv.to_y <= 4:
+			ju_cross_ok = true
+	_check(ju_cross_ok, "chariot unaffected by no_pao_cross_river")
+	# 倒计时:走完 3 整回合后规则消失,炮恢复过河
+	for i in 3:
+		var b1 := _piece(m.state, "red", 8, 6)
+		m.try_move(b1, 8, 5)
+		var b2 := _piece(m.state, "black", 8, 3)
+		m.try_move(b2, 8, 4)
+	_check(not m.rules.has_temp_rule("no_pao_cross_river"),
+		"temp rule expires after 3 full rounds")
+	var moves2 := MoveGen.piece_moves(m.state, pao)
+	var crossed_restored := false
+	for mv in moves2:
+		if mv.to_y <= 4:
+			crossed_restored = true
+	_check(crossed_restored, "cannon crosses river again after expiry")
+
+# ---------------------------------------------------------------- M1 数据驱动胜负
+
+func _test_win_cond_variants() -> void:
+	print("[win conditions: data-driven variants]")
+	# 1. 歼灭:黑方全卒被吃 => 红胜
+	var m := _new_match()
+	for p in m.state.pieces:
+		if p.faction == "black" and p.type.id == "bing":
+			p.alive = false
+	m.rules.win_conditions.clear()
+	m.rules.win_conditions.append(RuleSet.WinCondition.from_dict(
+		{"id": "wipe_bing", "type": "annihilation", "faction": "black", "types": ["bing"]}))
+	_check(WinCond.evaluate(m.state, m.rules) == WinCond.Result.RED_WIN,
+		"annihilation: red wins when black pawns wiped")
+	# 2. 撑过 N 回合:红方撑满 20 整回合 => 红胜
+	var m2 := _new_match()
+	m2.rules.win_conditions.clear()
+	m2.rules.win_conditions.append(RuleSet.WinCondition.from_dict(
+		{"id": "survive", "type": "survive_rounds", "faction": "red", "rounds": 20}))
+	m2.state.full_rounds = 19
+	_check(WinCond.evaluate(m2.state, m2.rules) == WinCond.Result.ONGOING,
+		"survive: ongoing at round 19")
+	m2.state.full_rounds = 20
+	_check(WinCond.evaluate(m2.state, m2.rules) == WinCond.Result.RED_WIN,
+		"survive: red wins at round 20")
+	# 3. 限回合子力分:回合耗尽,红子力高 => 红胜
+	var m3 := _new_match()
+	m3.rules.win_conditions.clear()
+	m3.rules.win_conditions.append(RuleSet.WinCondition.from_dict(
+		{"id": "score", "type": "turn_limit_score", "rounds": 40}))
+	m3.state.full_rounds = 39
+	_check(WinCond.evaluate(m3.state, m3.rules) == WinCond.Result.ONGOING,
+		"turn limit: ongoing before round 40")
+	m3.state.full_rounds = 40
+	for p in m3.state.pieces:
+		if p.faction == "black" and p.type.id in ["ju", "ma", "pao"]:
+			p.alive = false   # 红子力占优
+	_check(WinCond.evaluate(m3.state, m3.rules) == WinCond.Result.RED_WIN,
+		"turn limit: red wins on material at round 40")
+	# 4. SET_WIN_CONDITION 替换后立即生效:歼灭条件被神换回经典
+	var ops := RuleOps.new()
+	ops.apply(m3.state, m3.rules, m3.piece_types, "SET_WIN_CONDITION",
+		{"conditions": [{"id": "royal", "type": "royal_captured"}]})
+	_check(m3.rules.win_conditions.size() == 1 and m3.rules.win_conditions[0].type == "royal_captured",
+		"SET_WIN_CONDITION swaps list")
+	_check(WinCond.evaluate(m3.state, m3.rules) == WinCond.Result.ONGOING,
+		"after swap: same board no longer scores a win")
+
+# ---------------------------------------------------------------- M1 剧本
+
+func _test_scenario() -> void:
+	print("[scenario: god trial script]")
+	var pack := _ruleops_with_fantasy()
+	var m := Match.new(pack["state"], pack["rules"], pack["piece_types"])
+	var f := FileAccess.open("res://data/scenarios/god_trial.json", FileAccess.READ)
+	_check(f != null, "god_trial.json readable")
+	if f == null:
+		return
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	_check(parsed is Dictionary, "god_trial.json parses")
+	var sc := Scenario.from_dict(parsed, RuleOps.new())
+	var forecasts := 0
+	var triggered := 0
+	sc.event_forecast.connect(func(_t: String) -> void: forecasts += 1)
+	sc.event_triggered.connect(func(_l: RuleOps.Log, _t: String) -> void: triggered += 1)
+	m.scenario = sc
+	# 走到第 3 整回合:回合 2 结束(即 full_rounds 从 1→2 后)触发 forecast,
+	# 回合 3 开始(黑方行动结束 full_rounds=2 后下一次黑结束 =3?按实现:黑结束 +1 后立即检查)
+	# 逐回合推进:红走 bing(8,6)->(8,5),黑走 bing(8,3)->(8,4)
+	var rounds := 0
+	while rounds < 13 and m.result == WinCond.Result.ONGOING:
+		var rb := _piece(m.state, "red", 8, 6)
+		var mv := m.try_move(rb, 8, 5)
+		if mv == null:
+			break
+		var bb := _piece(m.state, "black", 8, 3)
+		if bb == null or m.try_move(bb, 8, 4) == null:
+			break
+		rounds += 1
+	# 第 3 回合事件(黑骑士降临)应已触发
+	_check(triggered >= 1, "scenario events triggered (got %d)" % triggered)
+	_check(forecasts >= 1, "scenario forecasts emitted (got %d)" % forecasts)
+	_check(m.state.piece_at(4, 4) != null and m.state.piece_at(4, 4).faction == "black",
+		"god-summoned knight present at (4,4)")
+	# 第 11 回合:胜负条件被改写为歼灭红兵 + 吃将
+	var cond_types := []
+	for wc in m.rules.win_conditions:
+		cond_types.append(wc.type)
+	_check(cond_types.has("annihilation") and cond_types.has("royal_captured"),
+		"win conditions rewritten by script (types=%s)" % str(cond_types))
+	_check(m.state.board.cell(4, 5).elevation == 2, "hill raised at (4,5) by script")
+	_check(not sc.finished(), "scenario has more events pending")
+
+
 
 func _ruleops_with_fantasy() -> Dictionary:
 	# 经典盘 + 幻想棋子类型合并(piece_types 表扩展)
@@ -354,6 +546,33 @@ func _test_ruleops_undo() -> void:
 	_check(m.state.piece_at(4, 4) == null, "mage removed after undo")
 	_check(m.state.board.cell(5, 6).elevation == 0, "hill flattened after undo")
 	_check(not m.rules.temp_rules.has("no_pao_cross_river"), "temp rule revoked")
-	_check(m.rules.win_condition_types.size() == 3, "win conditions restored")
+	_check(m.rules.win_conditions.size() == 3, "win conditions restored")
 	_check(m.piece_types["ju"].value == 9.0, "chariot value restored")
 	_check(ops.undo_last(m.state, m.rules) == false, "nothing left to undo")
+
+# ---------------------------------------------------------------- M1 α-β AI
+
+func _test_ai_search() -> void:
+	print("[ai search]")
+	var m := _new_match()
+	var ai := AISearch.new(2)
+	var act := ai.pick_action(m.state, m.rules, "red")
+	_check(act != null, "AI picks an action at depth 2")
+	var legal := false
+	for mv in MoveGen.all_legal_moves(m.state, "red"):
+		if mv.to_x == act.to_x and mv.to_y == act.to_y and mv.piece == act.piece:
+			legal = true
+	_check(legal, "AI action is a legal red move")
+	# 构造白吃车:黑车 (0,3) 挂在红炮 (1,7) 打击线上?直接构造红车吃黑车
+	for p in m.state.pieces:
+		if not p.type.royal:
+			p.alive = false
+	# 盘面:双将 + 黑车 (0,0) 紧邻红车 (1,0):红先,最优 = 吃车
+	m.state.pieces.append(Piece.new(m.piece_types["ju"], "black", 0, 0))
+	var red_ju := Piece.new(m.piece_types["ju"], "red", 1, 0)
+	m.state.pieces.append(red_ju)
+	m.state.turn = "red"
+	var ai2 := AISearch.new(2)
+	var act2 := ai2.pick_action(m.state, m.rules, "red")
+	_check(act2 != null and act2.piece == red_ju and act2.to_x == 0 and act2.to_y == 0,
+		"AI captures hanging chariot")

@@ -40,11 +40,11 @@ static func _build_board(d: Dictionary) -> Board:
 			continue
 		var xr: Array = pd.get("x_range", [0, 0])
 		var yr: Array = pd.get("y_range", [0, 0])
-		var rect := Rect2i(
-			int(xr[0]), int(yr[0]),
-			int(xr[1] - xr[0]) + 1, int(yr[1] - yr[0]) + 1
-		)
-		b.palaces[faction] = rect
+		# 九宫存闭区间角点(in_palace 按 x0..x1/y0..y1 比较,渲染取 palace_rect)
+		b.palaces[faction] = {
+			"x0": int(xr[0]), "x1": int(xr[1]),
+			"y0": int(yr[0]), "y1": int(yr[1])
+		}
 	# 地形格(M0 数据为空,M1 接入)
 	for cd in d.get("cells", []):
 		var x := int(cd.get("x", 0))

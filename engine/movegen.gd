@@ -59,6 +59,8 @@ static func _try_step(state: MatchState, p: Piece, v: Vector2i, out: Array[Actio
 		return
 	if not passable(state, p, tx, ty):
 		return
+	if _temp_rule_blocks(state, p, tx, ty):
+		return
 	var target := state.piece_at(tx, ty)
 	if target != null and target.faction == p.faction:
 		return
@@ -83,6 +85,8 @@ static func _try_leap(state: MatchState, p: Piece, v: Vector2i, out: Array[Actio
 				return
 	var target := state.piece_at(tx, ty)
 	if target != null and target.faction == p.faction:
+		return
+	if _temp_rule_blocks(state, p, tx, ty):
 		return
 	out.append(Action.new(p, tx, ty, Action.Kind.MOVE))
 
@@ -112,6 +116,8 @@ static func _scan_rider(state: MatchState, p: Piece, v: Vector2i, out: Array[Act
 			return
 		if not passable(state, p, cx, cy):
 			return
+		if _temp_rule_blocks(state, p, cx, cy):
+			return
 		var occ := state.piece_at(cx, cy)
 		if occ == null:
 			if not screened:
@@ -130,6 +136,23 @@ static func _scan_rider(state: MatchState, p: Piece, v: Vector2i, out: Array[Act
 			if occ.faction != p.faction:
 				out.append(Action.new(p, cx, cy, Action.Kind.MOVE))
 			return
+
+# ---------------------------------------------------------------- 临时规则(M1)
+
+## 临时规则 id -> 走法否决回调表。数据驱动:新增规则在此注册判定即可。
+## 返回 true = 该走法被临时规则禁止。
+static func _temp_rule_blocks(state: MatchState, p: Piece, tx: int, ty: int) -> bool:
+	if state.rules == null:
+		return false
+	for rule_id in state.rules.temp_rules.keys():
+		match rule_id:
+			"no_pao_cross_river":
+				# 本局炮(双方)不可过河:目标是河对岸即禁
+				if p.type.id == "pao" and state.board.crossed_river(p.faction, ty):
+					return true
+			_:
+				pass
+	return false
 
 # ---------------------------------------------------------------- 地形通行(M1)
 

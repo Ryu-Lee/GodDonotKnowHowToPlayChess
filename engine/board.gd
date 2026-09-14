@@ -7,7 +7,8 @@ enum Terrain { NORMAL, HILL, RIVER, BRIDGE }
 var width: int
 var height: int
 var river_rows: Array[int] = []   # 河界行(经典为 [4, 5];红方在下)
-var palaces: Dictionary = {}      # 双方九宫 key: red/black -> Rect2i
+## 双方九宫 key: red/black -> {x0,x1,y0,y1}(闭区间,避免 Rect2i end 开区间歧义)。
+var palaces: Dictionary = {}
 var _cells: Array = []
 var _exists: Array[bool] = []
 
@@ -34,11 +35,22 @@ func cell(x: int, y: int) -> Cell:
 func is_river(y: int) -> bool:
 	return river_rows.has(y)
 
+## 九宫闭区间角点(供渲染画斜线:左上/右下)。
+func palace_rect(faction: String) -> Rect2i:
+	var p: Dictionary = palaces.get(faction)
+	if p == null:
+		return Rect2i()
+	return Rect2i(
+		int(p["x0"]), int(p["y0"]),
+		int(p["x1"]) - int(p["x0"]) + 1, int(p["y1"]) - int(p["y0"]) + 1
+	)
+
 func in_palace(faction: String, x: int, y: int) -> bool:
-	var r: Rect2i = palaces.get(faction)
-	if r == null:
+	var p: Dictionary = palaces.get(faction)
+	if p == null:
 		return false
-	return x >= r.position.x and x <= r.end.x and y >= r.position.y and y <= r.end.y
+	return x >= int(p["x0"]) and x <= int(p["x1"]) \
+		and y >= int(p["y0"]) and y <= int(p["y1"])
 
 ## 是否已过河(相对 faction 方向)。
 ## 河界语义:river_rows = [黑侧河岸行, 红侧河岸行],河在两行之间。
@@ -51,6 +63,31 @@ func crossed_river(faction: String, y: int) -> bool:
 	if faction == "black":
 		return y > top
 	return y < bottom
+
+## 变更棋盘规格:同坐标旧格保留,界外旧格丢弃,新增区域补空白格。
+## 回滚(RESIZE_BOARD undo)由 RuleOps 用快照恢复,不依赖此处保留界外数据。
+func resize(w: int, h: int) -> void:
+	if w == width and h == height:
+		return
+	var old_w := width
+	var old_h := height
+	var old_cells := _cells
+	var old_exists := _exists
+	width = w
+	height = h
+	_cells = []
+	_exists = []
+	_cells.resize(w * h)
+	_exists.resize(w * h)
+	for y in h:
+		for x in w:
+			var i := y * w + x
+			if x < old_w and y < old_h:
+				_cells[i] = old_cells[y * old_w + x]
+				_exists[i] = old_exists[y * old_w + x]
+			else:
+				_cells[i] = Cell.new()
+				_exists[i] = true
 
 func serialize() -> Dictionary:
 	var cells_arr: Array = []
@@ -69,7 +106,7 @@ func serialize() -> Dictionary:
 	return {
 		"width": width, "height": height,
 		"river_rows": river_rows,
-		"palaces": palaces,
+		"palace": palaces,
 		"cells": cells_arr
 	}
 

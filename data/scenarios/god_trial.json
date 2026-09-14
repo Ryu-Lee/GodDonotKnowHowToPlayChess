@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "scenario_id": "god_trial",
+  "name": "神的试炼",
+  "description": "少年执红,神执黑。神耍赖步步升级:造子、隆山、断路、神谕、改写胜负。",
+  "base_pack": "classic_xiangqi",
+  "extra_packs": ["god_fantasy"],
+  "player_faction": "red",
+  "god_faction": "black",
+  "events": [
+    {
+      "turn": 3,
+      "forecast": "乌云在村口上空聚集……",
+      "ops": [
+        { "op": "ADD_PIECE", "params": { "type_id": "knight", "faction": "black", "x": 4, "y": 4 } }
+      ]
+    },
+    {
+      "turn": 5,
+      "forecast": "大地震颤,棋盘中央隐有山影隆起……",
+      "ops": [
+        { "op": "MODIFY_CELL", "params": { "x": 4, "y": 5, "terrain": 1, "elevation": 2 } },
+        { "op": "MODIFY_CELL", "params": { "x": 4, "y": 4, "terrain": 1, "elevation": 2 } }
+      ]
+    },
+    {
+      "turn": 7,
+      "forecast": "河面泛起涟漪,似乎有路要断……",
+      "ops": [
+        { "op": "MODIFY_CELL", "params": { "x": 3, "y": 4, "pass_rule": "impassable" } },
+        { "op": "MODIFY_CELL", "params": { "x": 5, "y": 5, "pass_rule": "impassable" } }
+      ]
+    },
+    {
+      "turn": 9,
+      "forecast": "神清了清嗓子,准备颁布神谕……",
+      "ops": [
+        { "op": "ADD_TEMP_RULE", "params": { "id": "no_pao_cross_river", "duration": 3 } },
+        { "op": "ADD_PIECE", "params": { "type_id": "archer", "faction": "black", "x": 8, "y": 3 } }
+      ]
+    },
+    {
+      "turn": 11,
+      "forecast": "神露出得意的笑:规则,该改写了。",
+      "ops": [
+        { "op": "ADD_PIECE", "params": { "type_id": "mage", "faction": "black", "x": 4, "y": 2 } },
+        { "op": "SET_WIN_CONDITION", "params": { "conditions": [
+          { "id": "annihilation_bing", "type": "annihilation", "faction": "red", "types": ["bing"] },
+          { "id": "capture_general", "type": "royal_captured" }
+        ] } }
+      ]
+    },
+    {
+      "turn": 13,
+      "forecast": "胜负条件再次被改写——撑住,别倒下!",
+      "ops": [
+        { "op": "ADD_PIECE", "params": { "type_id": "archer", "faction": "black", "x": 0, "y": 3 } },
+        { "op": "SET_WIN_CONDITION", "params": { "conditions": [
+          { "id": "survive_20", "type": "survive_rounds", "faction": "red", "rounds": 20 },
+          { "id": "capture_general", "type": "royal_captured" },
+          { "id": "annihilation_bing", "type": "annihilation", "faction": "red", "types": ["bing"] }
+        ] } }
+      ]
+    }
+  ]
+}

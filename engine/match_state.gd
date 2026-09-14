@@ -3,9 +3,12 @@ class_name MatchState
 extends RefCounted
 
 var board: Board
+## 规则集引用(临时规则消费方:movegen/combat/wincond 经 state 读取)。引擎内部数据,非渲染依赖。
+var rules: RuleSet = null
 var pieces: Array[Piece] = []
 var turn: String = "red"            # 当前行动方
 var move_count: int = 0             # 总步数(半回合)
+var full_rounds: int = 0            # 整回合数(黑方行动结束 +1)
 
 func _init(b: Board) -> void:
 	board = b
@@ -37,6 +40,7 @@ func clone() -> MatchState:
 	var ms := MatchState.new(board)
 	ms.turn = turn
 	ms.move_count = move_count
+	ms.full_rounds = full_rounds
 	for p in pieces:
 		var np := Piece.new(p.type, p.faction, p.x, p.y)
 		np.hp = p.hp
@@ -48,7 +52,7 @@ func serialize() -> Dictionary:
 	var arr: Array = []
 	for p in pieces:
 		arr.append(p.serialize())
-	return { "turn": turn, "move_count": move_count, "pieces": arr }
+	return { "turn": turn, "move_count": move_count, "full_rounds": full_rounds, "pieces": arr }
 
 func deserialize(d: Dictionary, piece_types: Dictionary) -> void:
 	pieces.clear()
@@ -63,3 +67,4 @@ func deserialize(d: Dictionary, piece_types: Dictionary) -> void:
 		pieces.append(p)
 	turn = String(d.get("turn", "red"))
 	move_count = int(d.get("move_count", 0))
+	full_rounds = int(d.get("full_rounds", 0))

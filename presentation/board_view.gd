@@ -13,6 +13,8 @@ const PIECE_R := 14.0
 var game: Match
 var selected: Piece = null
 var legal_targets: Dictionary = {}   # Vector2i -> Action
+## 攻击目标(点击攻击格后暂存,由 main 提交 try_attack)。
+var pending_attack: Piece = null
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(640, 360)
@@ -53,20 +55,22 @@ func _gui_input(event: InputEvent) -> void:
 
 func _on_click(x: int, y: int) -> void:
 	var clicked := game.state.piece_at(x, y)
-	# 1. 已选且点击目标在合法走法中 => 走子
+	# 1. 已选且点击目标在合法行动中 => 走子 / 攻击
 	if selected != null and legal_targets.has(Vector2i(x, y)):
-		var mv: Action = legal_targets[Vector2i(x, y)]
-		move_made.emit(mv.piece, mv.to_x, mv.to_y)
+		var act: Action = legal_targets[Vector2i(x, y)]
+		if act.is_attack():
+			pending_attack = act.target
+		move_made.emit(act.piece, act.to_x, act.to_y)
 		selected = null
 		legal_targets.clear()
 		queue_redraw()
 		return
-	# 2. 点己方棋子 => 选中
+	# 2. 点己方棋子 => 选中(列出走法 + 攻击目标)
 	if clicked != null and clicked.faction == game.state.turn:
 		selected = clicked
 		legal_targets.clear()
-		for mv in game.legal_moves_for(clicked):
-			legal_targets[Vector2i(mv.to_x, mv.to_y)] = mv
+		for act in game.legal_moves_for(clicked):
+			legal_targets[Vector2i(act.to_x, act.to_y)] = act
 		queue_redraw()
 		return
 	# 3. 其他 => 取消
@@ -78,8 +82,35 @@ func _draw() -> void:
 	if game == null:
 		return
 	_draw_board()
+	_draw_terrain()
 	_draw_pieces()
 	_draw_selection()
+
+## 地形渲染:山(棕隆起)/ 河纹 / 禁行叉。elevation 越高颜色越深。
+func _draw_terrain() -> void:
+	var b := game.state.board
+	for y in b.height:
+		for x in b.width:
+			if not b.in_bounds(x, y):
+				continue
+			var c := b.cell(x, y)
+			var center := _to_screen(x, y)
+			if c.terrain == Board.Terrain.HILL or c.elevation > 0:
+				var r := 12.0
+				draw_circle(center, r, Color("#6b4a2a"))
+				draw_circle(center, r - 3.0, Color("#8a6a3f"))
+				draw_circle(center + Vector2(0, -2), r - 7.0, Color("#a8865a"))
+			elif c.terrain == Board.Terrain.RIVER:
+				draw_circle(center, 9.0, Color("#3a6a8a"))
+			if c.pass_rule == "impassable":
+				var col := Color("#c04a3a")
+				draw_line(center + Vector2(-6, -6), center + Vector2(6, 6), col, 2.0)
+				draw_line(center + Vector2(6, -6), center + Vector2(-6, 6), col, 2.0)
+			elif c.pass_rule == "oneway":
+				var d := c.pass_dir
+				var tip := center + Vector2(d.x, d.y) * 8.0
+				draw_line(center - Vector2(d.x, d.y) * 6.0, tip, Color("#e0a83a"), 2.0)
+				draw_circle(tip, 2.0, Color("#e0a83a"))
 
 func _draw_board() -> void:
 	var b := game.state.board
@@ -110,13 +141,33 @@ func _draw_board() -> void:
 		var font := ThemeDB.fallback_font
 		draw_string(font, Vector2(150, mid_y + 7), "楚 河          汉 界",
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#8a6a2f"))
-	# 九宫斜线
+	# 九宫斜线(闭区间角点:左上-右下 / 右上-左下)
 	for faction in ["red", "black"]:
-		var r: Rect2i = b.palaces.get(faction)
-		if r == null:
+		var r: Rect2i = b.palace_rect(faction)
+		if r.size == Vector2i.ZERO:
 			continue
-		draw_line(_to_screen(r.position.x, r.position.y), _to_screen(r.end.x, r.end.y), line, 1.5)
-		draw_line(_to_screen(r.end.x, r.position.y), _to_screen(r.position.x, r.end.y), line, 1.5)
+		draw_line(_to_screen(r.position.x, r.position.y), _to_screen(r.end.x - 1, r.end.y - 1), line, 1.5)
+		draw_line(_to_screen(r.end.x - 1, r.position.y), _to_screen(r.position.x, r.end.y - 1), line, 1.5)
+	# 兵/炮位起点标记(实际棋盘的短十字折线)
+	for x in [0, 2, 4, 6, 8]:
+		_start_mark(x, 3)
+		_start_mark(x, 6)
+	for x in [1, 7]:
+		_start_mark(x, 2)
+		_start_mark(x, 7)
+
+func _start_mark(x: int, y: int) -> void:
+	var line := Color("#3a2408")
+	var c := _to_screen(x, y)
+	var gap := 4.0    # 与纵线留缝
+	var len := 6.0
+	var b := game.state.board
+	for side in [-1, 1]:
+		if x + side >= 0 and x + side < b.width:
+			var dx := float(side)
+			draw_line(c + Vector2(gap * dx, 0), c + Vector2((gap + len) * dx, 0), line, 1.0)
+			draw_line(c + Vector2(gap * dx, 0), c + Vector2(gap * dx, -len), line, 1.0)
+			draw_line(c + Vector2(gap * dx, 0), c + Vector2(gap * dx, len), line, 1.0)
 
 func _draw_pieces() -> void:
 	for p in game.state.pieces:
@@ -124,11 +175,18 @@ func _draw_pieces() -> void:
 			continue
 		var c := _to_screen(p.x, p.y)
 		var is_red := p.faction == "red"
+		var fantasy := p.type.tier == "fantasy"
 		var rim := Color("#5a3d16")
 		var face := Color("#e8d3a0") if is_red else Color("#e8d3a0")
 		draw_circle(c, PIECE_R, rim)
 		draw_circle(c, PIECE_R - 2.5, face)
-		draw_arc(c, PIECE_R - 5.0, 0, TAU, 40, Color("#a8865a"), 1.5, true)
+		# fantasy 棋子:紫描边统一(神造物)
+		draw_arc(c, PIECE_R - 5.0, 0, TAU, 40,
+			Color("#7a4ad9") if fantasy else Color("#a8865a"), 1.5, true)
+		# 多血棋子:血点显示
+		if p.type.hp > 1:
+			for i in p.hp:
+				draw_circle(c + Vector2(-6.0 + 4.0 * i, 9.0), 1.6, Color("#b03030"))
 		var glyph: String = _glyph(p)
 		var font := ThemeDB.fallback_font
 		var col := Color("#b03030") if is_red else Color("#222222")
@@ -144,7 +202,10 @@ func _glyph(p: Piece) -> String:
 		"ma": ["馬", "馬"],
 		"ju": ["車", "車"],
 		"pao": ["炮", "砲"],
-		"bing": ["兵", "卒"]
+		"bing": ["兵", "卒"],
+		"knight": ["骑", "骑"],
+		"archer": ["弓", "弓"],
+		"mage": ["法", "法"]
 	}
 	var pair: Array = glyphs.get(p.id(), ["?", "?"])
 	return pair[0] if is_red else pair[1]
@@ -154,9 +215,16 @@ func _draw_selection() -> void:
 		var c := _to_screen(selected.x, selected.y)
 		draw_arc(c, PIECE_R + 3.0, 0, TAU, 48, Color("#ffd94a"), 2.5, true)
 	for t in legal_targets.keys():
+		var act: Action = legal_targets[t]
 		var c := _to_screen(t.x, t.y)
-		var occupant := game.state.piece_at(t.x, t.y)
-		if occupant != null:
-			draw_arc(c, PIECE_R + 3.0, 0, TAU, 48, Color("#ff5a3c"), 2.5, true)  # 可吃:红圈
+		if act.is_attack():
+			# 攻击目标:紫红 X 圈(splash 空格落点同)
+			draw_arc(c, PIECE_R + 3.0, 0, TAU, 48, Color("#b04ad9"), 2.5, true)
+			draw_line(c + Vector2(-4, -4), c + Vector2(4, 4), Color("#b04ad9"), 2.0)
+			draw_line(c + Vector2(4, -4), c + Vector2(-4, 4), Color("#b04ad9"), 2.0)
 		else:
-			draw_circle(c, 4.0, Color("#3a2408"))                                  # 可走:圆点
+			var occupant := game.state.piece_at(t.x, t.y)
+			if occupant != null:
+				draw_arc(c, PIECE_R + 3.0, 0, TAU, 48, Color("#ff5a3c"), 2.5, true)  # 可吃:红圈
+			else:
+				draw_circle(c, 4.0, Color("#3a2408"))                                  # 可走:圆点
