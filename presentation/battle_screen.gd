@@ -34,6 +34,7 @@ func start(battle_cfg: Dictionary) -> void:
 	battle = battle_cfg
 	var ai_cfg: Dictionary = battle.get("ai", {})
 	ai_depth = int(ai_cfg.get("depth", 2))
+	board_view.player_faction = String(battle.get("player_faction", "red"))
 	_start_battle()
 
 func _layout() -> void:
@@ -170,14 +171,33 @@ func _attack_desc(p: Piece) -> String:
 
 func _on_move_made(piece: Piece, to_x: int, to_y: int) -> void:
 	var act: Action = null
+	var from_x := piece.x
+	var from_y := piece.y
 	if board_view.pending_attack != null:
 		act = game.try_attack(piece, to_x, to_y, board_view.pending_attack)
 		board_view.pending_attack = null
 	if act == null:
 		act = game.try_move(piece, to_x, to_y)
+	_play_action_anim(act, from_x, from_y)
 	_bind()
 	_refresh()
 	_ai_move()
+
+## 行动演出:移动滑行 / 攻击突进 + 受击闪红 + 伤害数字 + 阵亡淡出。
+func _play_action_anim(act: Action, from_x: int, from_y: int) -> void:
+	if act == null:
+		return
+	if act.is_move():
+		board_view.anim_move(act.piece, from_x, from_y)
+		if act.captured != null:
+			board_view.anim_fade(act.captured)
+	else:
+		board_view.anim_attack(act.piece, act.to_x, act.to_y)
+		for entry in act.damage_log:
+			var target: Piece = entry["piece"]
+			board_view.anim_hit(target, int(entry["dmg"]), act.from_x, act.from_y)
+			if not target.alive:
+				board_view.anim_fade(target)
 
 ## AI 行动(敌方回合)。推迟一帧再搜索:玩家落子先渲染,避免画面冻结。
 ## 重入保护:等待期间局面已变(玩家悔棋/重打/再落子)则放弃本次应手。
@@ -199,10 +219,13 @@ func _do_ai_move() -> void:
 	var act := ai.pick_action(game.state, game.rules, "black")
 	if act == null:
 		return
+	var from_x := act.piece.x
+	var from_y := act.piece.y
 	if act.is_move():
 		game.try_move(act.piece, act.to_x, act.to_y)
 	else:
 		game.try_attack(act.piece, act.to_x, act.to_y, act.target)
+	_play_action_anim(act, from_x, from_y)
 	_bind()
 	_refresh()
 
@@ -276,6 +299,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		match event.keycode:
 			KEY_Z:
 				if game != null and game.undo_last():
+					board_view.reset_anims()   # 状态跳变:进行中的演出已无意义
 					_bind()
 					_refresh()
 			KEY_R:
