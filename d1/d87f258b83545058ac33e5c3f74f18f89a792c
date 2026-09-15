@@ -1,0 +1,39 @@
+presentation/campaign_screen.gd
+  s_09245e0080122e::t_9a84cb350d031a 85-87
+presentation/board_view.gd
+  s_09245e0080122e::t_d098e9c7cc4a15 10-12
+  s_09245e0080122e::t_fb7ae328fb10d7 7-8
+  s_09245e0080122e::t_7eee0b269784d5 13
+  s_09245e0080122e::t_ef36300706dad1 78,80-87
+  s_09245e0080122e::t_e6d1caae705a35 153-154
+  s_09245e0080122e::t_82a989600a1233 204-205
+presentation/settings_menu.gd
+  s_09245e0080122e::t_17ffa23fe794aa 9-10
+  s_09245e0080122e::t_9ae9425c6565e9 242-247,249-255
+  s_09245e0080122e::t_4736392549d330 235-241,248
+  s_09245e0080122e::t_d6012ec0f08f58 217
+presentation/battle_screen.gd
+  s_09245e0080122e::t_0907ec2b239e17 43-51
+  s_09245e0080122e::t_143da88b5944c2 18-19
+  s_09245e0080122e::t_f87629954384d4 106-137,146-170
+  s_09245e0080122e::t_740374d5901afa 138-145
+  s_09245e0080122e::t_dc8d9be9b74867 54,59-60,64-65,71
+project.godot
+  s_09245e0080122e::t_69bcef4229e85b 20-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "d1d87f258b83545058ac33e5c3f74f18f89a792c",
+  "prompts": {},
+  "sessions": {
+    "s_09245e0080122e": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "fae9a65b-321b-4199-80a3-f1ee799570ff",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
