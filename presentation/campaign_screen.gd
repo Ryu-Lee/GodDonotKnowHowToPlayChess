@@ -82,6 +82,9 @@ func _load_battles() -> void:
 		btn.size = Vector2(260, 34)
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.add_theme_font_size_override("font_size", 13)
+		# 名称左对齐 + 左侧留出文字内边距
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		btn.add_theme_constant_override("padding_left", 8)
 		var idx := i
 		btn.pressed.connect(func() -> void: _select(idx))
 		add_child(btn)

@@ -4,10 +4,13 @@ class_name BoardView
 extends Control
 
 signal move_made(piece: Piece, to_x: int, to_y: int)
+## 点选任意棋子(敌我皆可) => 信息面板显示说明。
+signal piece_inspected(piece: Piece)
 
-const CELL := 34          # 格距(像素,640×360 下 9×10 棋盘 = 272×340 内含边距)
-const MARGIN_X := 44.0
-const MARGIN_Y := 8.0
+const CELL := 34          # 格距(像素,640×360 下 9×10 棋盘 = 272×306 内含边距)
+## 居中偏移:棋盘含边框 324×326;右侧留 150px 信息面板 => 板心 x = (640-150-324)/2 + 26
+const MARGIN_X := 109.0
+const MARGIN_Y := 27.0
 const PIECE_R := 14.0
 
 var game: Match
@@ -72,8 +75,16 @@ func _on_click(x: int, y: int) -> void:
 		for act in game.legal_moves_for(clicked):
 			legal_targets[Vector2i(act.to_x, act.to_y)] = act
 		queue_redraw()
+		piece_inspected.emit(clicked)
 		return
-	# 3. 其他 => 取消
+	# 3. 点敌方棋子 => 不选中,只展示信息
+	if clicked != null:
+		selected = null
+		legal_targets.clear()
+		queue_redraw()
+		piece_inspected.emit(clicked)
+		return
+	# 4. 其他 => 取消
 	selected = null
 	legal_targets.clear()
 	queue_redraw()
@@ -139,8 +150,8 @@ func _draw_board() -> void:
 	if river_top >= 0:
 		var mid_y: float = (_to_screen(0, river_top).y + _to_screen(0, river_bottom).y) / 2.0
 		var font := ThemeDB.fallback_font
-		draw_string(font, Vector2(150, mid_y + 7), "楚 河          汉 界",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#8a6a2f"))
+		draw_string(font, Vector2(205, mid_y + 8), "楚 河          汉 界",
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("#8a6a2f"))
 	# 九宫斜线(闭区间角点:左上-右下 / 右上-左下)
 	for faction in ["red", "black"]:
 		var r: Rect2i = b.palace_rect(faction)
@@ -190,8 +201,8 @@ func _draw_pieces() -> void:
 		var glyph: String = _glyph(p)
 		var font := ThemeDB.fallback_font
 		var col := Color("#b03030") if is_red else Color("#222222")
-		draw_string(font, c + Vector2(-PIECE_R + 3, 6), glyph,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, col)
+		draw_string(font, c + Vector2(-PIECE_R + 2, 7), glyph,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 18, col)
 
 func _glyph(p: Piece) -> String:
 	var is_red := p.faction == "red"

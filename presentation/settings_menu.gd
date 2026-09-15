@@ -6,8 +6,8 @@ extends Control
 signal closed
 
 const SETTINGS_PATH := "user://settings.cfg"
-## 默认分辨率 720p(基础设计分辨率 640×360,stretch=viewport 自适应)。
-const DEFAULT_RES := Vector2i(1280, 720)
+## 默认分辨率 1080p(基础设计分辨率 640×360,stretch=viewport 自适应)。
+const DEFAULT_RES := Vector2i(1920, 1080)
 ## 分辨率档(最高 1080p)。
 const RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(640, 360), Vector2i(960, 540), Vector2i(1280, 720), Vector2i(1920, 1080)
@@ -214,6 +214,7 @@ func _save_settings(res_override: Vector2i = Vector2i.ZERO) -> void:
 		var idx := AudioServer.get_bus_index(bus)
 		if idx >= 0:
 			cfg.set_value("audio", bus, db_to_linear(AudioServer.get_bus_volume_db(idx)))
+	cfg.set_value("display", "version", 2)
 	var mode := DisplayServer.window_get_mode()
 	cfg.set_value("display", "fullscreen", mode == DisplayServer.WINDOW_MODE_FULLSCREEN)
 	if res_override != Vector2i.ZERO:
@@ -231,21 +232,27 @@ func _save_settings(res_override: Vector2i = Vector2i.ZERO) -> void:
 
 func _load_settings() -> void:
 	var cfg := ConfigFile.new()
-	if cfg.load(SETTINGS_PATH) != OK:
-		return
-	for bus in ["Master", "Music", "SFX"]:
-		var v := float(cfg.get_value("audio", bus, 1.0))
-		var idx := AudioServer.get_bus_index(bus)
-		if idx >= 0:
-			AudioServer.set_bus_volume_db(idx, linear_to_db(maxf(v, 0.0001)))
-			AudioServer.set_bus_mute(idx, v <= 0.001)
-	var fs := bool(cfg.get_value("display", "fullscreen", false))
-	if fs:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-	else:
-		var w := int(cfg.get_value("display", "width", DEFAULT_RES.x))
-		var h := int(cfg.get_value("display", "height", DEFAULT_RES.y))
-		_resize_next_frame(Vector2i(w, h))
+	if cfg.load(SETTINGS_PATH) == OK:
+		for bus in ["Master", "Music", "SFX"]:
+			var v := float(cfg.get_value("audio", bus, 1.0))
+			var idx := AudioServer.get_bus_index(bus)
+			if idx >= 0:
+				AudioServer.set_bus_volume_db(idx, linear_to_db(maxf(v, 0.0001)))
+				AudioServer.set_bus_mute(idx, v <= 0.001)
+		# 显示配置带版本:旧版本(<2)的分辨率存档是旧默认残留,弃用一次改走新默认
+		var ver := int(cfg.get_value("display", "version", 0))
+		if ver >= 2:
+			var fs := bool(cfg.get_value("display", "fullscreen", false))
+			if fs:
+				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+			else:
+				var w := int(cfg.get_value("display", "width", DEFAULT_RES.x))
+				var h := int(cfg.get_value("display", "height", DEFAULT_RES.y))
+				_resize_next_frame(Vector2i(w, h))
+			return
+	# 无存档或旧版本:默认 1080p,并立即落盘带上新版本号
+	_resize_next_frame(DEFAULT_RES)
+	_save_settings(DEFAULT_RES)
 
 ## 打开时把 UI 状态同步到当前配置。
 func _sync_ui() -> void:

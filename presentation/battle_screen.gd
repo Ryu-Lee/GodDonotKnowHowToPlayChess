@@ -15,6 +15,8 @@ var board_view: BoardView
 var status_label: Label
 var hint_label: Label
 var decree_label: Label
+## 棋子信息面板(固定右侧):点任意棋子显示走法/攻击说明。
+var info_label: Label
 ## 本关配置(campaign battles[i])。
 var battle: Dictionary = {}
 var ai: AISearch = null
@@ -38,26 +40,35 @@ func _layout() -> void:
 	board_view = BOARD_VIEW.new()
 	add_child(board_view)
 	board_view.move_made.connect(_on_move_made)
+	board_view.piece_inspected.connect(_on_piece_inspected)
+
+	# 棋子信息面板:右侧固定位置
+	info_label = Label.new()
+	info_label.position = Vector2(420, 34)
+	info_label.size = Vector2(214, 300)
+	info_label.add_theme_font_size_override("font_size", 11)
+	info_label.add_theme_color_override("font_color", Color("#c8b088"))
+	add_child(info_label)
 
 	status_label = Label.new()
-	status_label.position = Vector2(16, 4)
+	status_label.position = Vector2(12, 2)
 	status_label.add_theme_font_size_override("font_size", 13)
 	add_child(status_label)
 
 	hint_label = Label.new()
-	hint_label.position = Vector2(16, 342)
-	hint_label.add_theme_font_size_override("font_size", 10)
+	hint_label.position = Vector2(12, 344)
+	hint_label.add_theme_font_size_override("font_size", 11)
 	add_child(hint_label)
 
 	decree_label = Label.new()
-	decree_label.position = Vector2(16, 22)
-	decree_label.add_theme_font_size_override("font_size", 11)
+	decree_label.position = Vector2(12, 22)
+	decree_label.add_theme_font_size_override("font_size", 12)
 	decree_label.add_theme_color_override("font_color", Color("#d9a8ff"))
 	add_child(decree_label)
 
 	var back_btn := Button.new()
 	back_btn.text = "← 战役"
-	back_btn.position = Vector2(470, 2)
+	back_btn.position = Vector2(540, 2)
 	back_btn.focus_mode = Control.FOCUS_NONE
 	back_btn.add_theme_font_size_override("font_size", 12)
 	back_btn.pressed.connect(func() -> void: back_pressed.emit())
@@ -91,6 +102,71 @@ func _start_battle() -> void:
 	_refresh()
 
 # ---------------------------------------------------------------- 交互
+
+## 点选任意棋子 => 信息面板展示名称/阵营/生命/走法/攻击方式。
+func _on_piece_inspected(p: Piece) -> void:
+	if p == null or game == null:
+		return
+	var side := "红方" if p.faction == "red" else "黑方"
+	var lines: Array[String] = []
+	lines.append("【%s】%s" % [side, p.type.display_name])
+	lines.append("生命 %d/%d" % [p.hp, p.type.hp])
+	if p.type.royal:
+		lines.append("将帅 · 被吃即败")
+	lines.append("")
+	lines.append(_move_desc(p))
+	lines.append(_attack_desc(p))
+	info_label.text = "\n".join(lines)
+
+## 走法描述。
+func _move_desc(p: Piece) -> String:
+	var t := p.type
+	match t.move_type:
+		"step":
+			return "移动:步行 %d 个方向" % t.pattern.size()
+		"zone_step":
+			var zone := "限九宫" if t.zone == "palace_own" else "限己方半场"
+			return "移动:步行(%s)" % zone
+		"leaper":
+			var leg := ""
+			if t.blockers.has("ma_leg"):
+				leg = "(蹩马腿)"
+			elif t.blockers.has("xiang_eye"):
+				leg = "(塞象眼)"
+			return "移动:跳跃%s" % leg
+		"rider":
+			# 斜向 pattern(如神造骑士)= 连续跳跃;正交 pattern = 直线滑行
+			var diagonal := false
+			for v in t.pattern:
+				if v.x != 0 and v.y != 0:
+					diagonal = true
+					break
+			if diagonal:
+				return "移动:连续跳跃,不蹩腿"
+			if t.capture_mode == "screen":
+				return "移动:直线滑行;吃子需隔一子(炮架)"
+			return "移动:直线滑行,遇子而止"
+		_:
+			return "移动:特殊"
+
+## 攻击描述。
+func _attack_desc(p: Piece) -> String:
+	var t := p.type
+	match t.action_economy:
+		"chess":
+			return "攻击:走子即吃(占据式)"
+		_:
+			match t.attack_type:
+				"melee":
+					var c := ",被殴可反击" if t.counter_attack else ",被贴脸无反击"
+					return "攻击:近战 威力%d%s" % [t.attack_power, c]
+				"ranged":
+					var h := ";高地射程+1" if game.state.board.cell(p.x, p.y).elevation > 0 else ""
+					return "攻击:远程 射程%d 威力%d%s" % [t.attack_range, t.attack_power, h]
+				"splash":
+					return "攻击:溅射 射程%d 威力%d(不分敌我)" % [t.attack_range, t.attack_power]
+				_:
+					return "攻击:近战"
 
 func _on_move_made(piece: Piece, to_x: int, to_y: int) -> void:
 	var act: Action = null
