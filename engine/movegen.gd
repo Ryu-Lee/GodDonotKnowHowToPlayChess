@@ -238,6 +238,7 @@ static func _zone_ok(state: MatchState, p: Piece, tx: int, ty: int) -> bool:
 
 ## 模拟行动后,faction 的将是否被攻击。
 ## 覆盖:displace 走法 / tactics 攻击 / 双将对脸(飞将)。
+## 注意:M1 起不再用于走法合法性过滤(允许败着);保留供演出层"将军"播报等。
 static func is_in_check(state: MatchState, faction: String) -> bool:
 	var royal := state.royal_of(faction)
 	if royal == null:
@@ -256,14 +257,12 @@ static func is_in_check(state: MatchState, faction: String) -> bool:
 			for atk in Combat.all_attacks(state, p):
 				if atk.target == royal:
 					return true
-				if atk.target == null and _splash_covers(p, atk, royal):
-					return true
 	return false
 
 ## 双将对脸判定:同列、中间无子。
 static func _flying_general_exposed(state: MatchState, faction: String, royal: Piece) -> bool:
 	var enemy_royal := state.royal_of("black" if faction == "red" else "red")
-	if enemy_royal == null or enemy_royal.x != royal.x:
+	if enemy_royal == null or royal == null or enemy_royal.x != royal.x:
 		return false
 	var step := 1 if enemy_royal.y > royal.y else -1
 	var y := royal.y + step
@@ -272,15 +271,6 @@ static func _flying_general_exposed(state: MatchState, faction: String, royal: P
 			return false
 		y += step
 	return true
-
-## splash 打击域是否覆盖 royal(中心 + splash_pattern 相对格)。
-static func _splash_covers(p: Piece, atk: Action, royal: Piece) -> bool:
-	if atk.to_x == royal.x and atk.to_y == royal.y:
-		return true
-	for v in p.type.splash_pattern:
-		if atk.to_x + v.x == royal.x and atk.to_y + v.y == royal.y:
-			return true
-	return false
 
 ## 应用走法(落子)。返回被吃子。
 static func apply(state: MatchState, act: Action) -> Piece:
@@ -305,7 +295,9 @@ static func undo(state: MatchState, act: Action) -> void:
 		act.captured.y = act.to_y
 	state.move_count -= 1
 
-## 走法合法性:目标在生成列表中 + 单向/地形检查 + 模拟后不被将。
+## 走法合法性:目标在生成列表中 + 单向/地形检查 + 不造成双将对脸。
+## 注意:不阻止"走完被将军"的送将步——玩家有权走出败着,
+## 将被吃时由 royal_captured 胜负条件直接结算(将死=无合法走法+被将,仍判负)。
 static func is_legal(state: MatchState, act: Action) -> bool:
 	var acts := piece_moves(state, act.piece)
 	var found := false
@@ -317,13 +309,15 @@ static func is_legal(state: MatchState, act: Action) -> bool:
 		return false
 	if not oneway_ok(state, act.from_x, act.from_y, act.to_x, act.to_y):
 		return false
+	# 双将对脸(飞将)是棋盘结构规则(同蹩马腿),仍禁止:
+	# 模拟后己方暴露在对将线上 => 非法
 	var faction := act.piece.faction
 	apply(state, act)
-	var in_check := is_in_check(state, faction)
+	var exposed := _flying_general_exposed(state, faction, state.royal_of(faction))
 	undo(state, act)
-	return not in_check
+	return not exposed
 
-## faction 全部"不送将"合法走法。
+## faction 全部合法走法(不含送将过滤,见 is_legal 注释)。
 static func all_legal_moves(state: MatchState, faction: String) -> Array[Action]:
 	var out: Array[Action] = []
 	for act in all_moves(state, faction):

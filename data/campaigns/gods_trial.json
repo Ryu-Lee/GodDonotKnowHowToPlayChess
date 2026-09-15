@@ -12,7 +12,7 @@
       "extra_packs": [],
       "player_faction": "red",
       "enemy_faction": "black",
-      "ai": { "enabled": false, "depth": 2 },
+      "ai": { "enabled": true, "depth": 2 },
       "scenario": ""
     },
     {

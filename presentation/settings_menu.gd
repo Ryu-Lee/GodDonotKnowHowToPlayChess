@@ -6,7 +6,9 @@ extends Control
 signal closed
 
 const SETTINGS_PATH := "user://settings.cfg"
-## 分辨率档(最高 1080p;基础设计分辨率 640×360,stretch=viewport 自适应)。
+## 默认分辨率 720p(基础设计分辨率 640×360,stretch=viewport 自适应)。
+const DEFAULT_RES := Vector2i(1280, 720)
+## 分辨率档(最高 1080p)。
 const RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(640, 360), Vector2i(960, 540), Vector2i(1280, 720), Vector2i(1920, 1080)
 ]
@@ -169,9 +171,9 @@ func _apply_resolution(idx: int) -> void:
 		# 最大化窗口 set_size 是静默 no-op:先退回窗口模式再改尺寸
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 		_fullscreen_btn.button_pressed = false
-	DisplayServer.window_set_size(r)
-	_center_window()
-	_save_settings()
+	# 模式切换与 set_size 同帧可能被吞:延迟到下一帧真正设尺寸
+	_resize_next_frame(r)
+	_save_settings(r)
 
 func _apply_fullscreen(on: bool) -> void:
 	if on:
@@ -179,9 +181,16 @@ func _apply_fullscreen(on: bool) -> void:
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 		var r := _saved_resolution()
-		DisplayServer.window_set_size(r)
-		_center_window()
+		_resize_next_frame(r)
 	_save_settings()
+
+## 下一帧真正改窗口尺寸(模式切换后同帧 set_size 会被窗口管理器吞掉)。
+func _resize_next_frame(r: Vector2i) -> void:
+	_set_window_size.bind(r).call_deferred()
+
+func _set_window_size(r: Vector2i) -> void:
+	DisplayServer.window_set_size(r)
+	_center_window()
 
 func _center_window() -> void:
 	var screen := DisplayServer.screen_get_usable_rect()
@@ -192,10 +201,10 @@ func _center_window() -> void:
 func _saved_resolution() -> Vector2i:
 	var cfg := ConfigFile.new()
 	if cfg.load(SETTINGS_PATH) == OK:
-		var w := int(cfg.get_value("display", "width", 960))
-		var h := int(cfg.get_value("display", "height", 540))
+		var w := int(cfg.get_value("display", "width", DEFAULT_RES.x))
+		var h := int(cfg.get_value("display", "height", DEFAULT_RES.y))
 		return Vector2i(w, h)
-	return Vector2i(960, 540)
+	return DEFAULT_RES
 
 # ---------------------------------------------------------------- 持久化
 
@@ -234,10 +243,9 @@ func _load_settings() -> void:
 	if fs:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	else:
-		var w := int(cfg.get_value("display", "width", 960))
-		var h := int(cfg.get_value("display", "height", 540))
-		DisplayServer.window_set_size(Vector2i(w, h))
-		_center_window()
+		var w := int(cfg.get_value("display", "width", DEFAULT_RES.x))
+		var h := int(cfg.get_value("display", "height", DEFAULT_RES.y))
+		_resize_next_frame(Vector2i(w, h))
 
 ## 打开时把 UI 状态同步到当前配置。
 func _sync_ui() -> void:

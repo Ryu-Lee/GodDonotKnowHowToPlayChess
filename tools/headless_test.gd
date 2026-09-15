@@ -175,9 +175,16 @@ func _test_flying_general() -> void:
 	var jiang := _piece(m.state, "red", 4, 9)
 	var black_jiang := _piece(m.state, "black", 4, 0)
 	_check(jiang != null and black_jiang != null, "both generals alive on file 4")
-	# 红帅尝试走到 (4,8):模拟后双将对脸 => 非法
+	# 红帅尝试走到 (4,8):模拟后双将对脸 => 非法(结构规则,非败着过滤)
 	var mv := Action.new(jiang, 4, 8)
 	_check(not MoveGen.is_legal(m.state, mv), "general cannot step into flying-general line")
+	# 送将步(走完被吃)不再过滤:先把红帅移出对将线(3,9)避免结构规则干扰,
+	# 再构造黑车 (3,5) 瞄着 (3,8):红车走进去 = 下回合必被吃,但仍合法
+	jiang.x = 3
+	m.state.pieces.append(Piece.new(m.piece_types["ju"], "black", 3, 5))
+	var suicide := Action.new(Piece.new(m.piece_types["ju"], "red", 5, 8), 3, 8)
+	m.state.pieces.append(suicide.piece)
+	_check(MoveGen.is_legal(m.state, suicide), "losing moves are legal (player freedom)")
 
 func _test_checkmate() -> void:
 	print("[checkmate / stalemate]")
@@ -196,11 +203,24 @@ func _test_checkmate() -> void:
 	m.state.pieces.append(Piece.new(m.piece_types["ju"], "red", 4, 2))   # 防黑将吃(4,1)后逃逸
 	m.state.turn = "black"
 	var black_moves := MoveGen.all_legal_moves(m.state, "black")
-	# 黑将可吃 (4,1) 的车:吃后 (4,1) 被红车 (4,2) 将 => 非法;两侧被红车占。
-	# 黑将无任何合法走法 => 困毙/将死
-	_check(black_moves.is_empty(), "black has no legal moves (checkmate)")
+	# 黑将可吃 (4,1) 与 (5,0) 的车(吃后必被将 = 合法败着,不再过滤);
+	# (3,0) 吃车后与红帅 (3,9) 同列空巷 => 对禁。=> 合法走法 = 2 吃车步
+	var capture_targets := {}
+	for bmv in black_moves:
+		capture_targets[Vector2i(bmv.to_x, bmv.to_y)] = true
+	_check(black_moves.size() == 2 and capture_targets.has(Vector2i(4, 1)) and capture_targets.has(Vector2i(5, 0)),
+		"black general: both chariot captures legal (losing moves allowed, got %d moves)" % black_moves.size())
+	# 黑将真吃 (4,1) 车:submit 接受败着;对局未完(将还在)——
+	# 红车 (4,2) 下一步吃将(将身挡 4 列,只能吃 (4,1)),royal_captured 结算 => 红胜
+	var applied := m.try_move(black_moves[0].piece, 4, 1)
+	_check(applied != null, "suicide capture is accepted by submit")
+	_check(m.result == WinCond.Result.ONGOING, "game ongoing after suicide move (royal still alive)")
+	var red_ju := _piece(m.state, "red", 4, 2)
+	_check(red_ju != null, "red chariot at (4,2) ready to capture general")
+	var finisher := m.try_move(red_ju, 4, 1)
+	_check(finisher != null, "red captures black general")
 	m.result = WinCond.evaluate(m.state, m.rules)
-	_check(m.result == WinCond.Result.RED_WIN, "red wins by checkmate")
+	_check(m.result == WinCond.Result.RED_WIN, "royal captured => red wins")
 
 func _test_undo() -> void:
 	print("[undo]")
@@ -271,6 +291,10 @@ func _test_terrain_impassable() -> void:
 	# 红车 (0,9) 上方 (0,8) 设禁行格 => 车向上被截断,只能横向滑
 	var ju := _piece(m.state, "red", 0, 9)
 	m.state.board.cell(0, 8).pass_rule = "impassable"
+	# 挪走 (1,9) 红马让出横向滑道((2,7) 空),验证地形只截断纵向
+	var horse := _piece(m.state, "red", 1, 9)
+	horse.x = 2
+	horse.y = 7
 	var moves := MoveGen.piece_moves(m.state, ju)
 	var targets := {}
 	for mv in moves:
@@ -286,17 +310,14 @@ func _test_terrain_oneway() -> void:
 	var bing := _piece(m.state, "red", 0, 6)
 	m.state.board.cell(0, 5).pass_rule = "oneway"
 	m.state.board.cell(0, 5).pass_dir = Vector2i(0, 1)
-	# 未过河兵本可前进 (0,5);单向拦截 => 无走法
-	var moves := MoveGen.piece_moves(m.state, bing)
-	_check(moves.is_empty(), "pawn blocked by oneway (dir mismatch)")
-	# 黑卒 (0,3) 向下进入 (0,4)? pass_dir=(0,1) 允许向下 => 需构造黑卒在 (0,2) 向下走 (0,3) 已占;换格:黑卒从 (1,3) 走 (1,4) 不受影响
-	m.state.board.cell(0, 5).pass_dir = Vector2i(0, -1)   # 反向:只允许从下往上(红兵方向)
-	var moves2 := MoveGen.piece_moves(m.state, bing)
-	var ok := false
-	for mv in moves2:
-		if mv.to_x == 0 and mv.to_y == 5:
-			ok = true
-	_check(ok, "pawn passes oneway when dir matches")
+	# 未过河兵本可前进 (0,5);单向拦截 => submit 拒绝(piece_moves 不查 oneway,
+	# 单向属"进入方向"规则,由 is_legal/oneway_ok 闸把关)
+	var mv := m.try_move(bing, 0, 5)
+	_check(mv == null, "pawn blocked by oneway (dir mismatch)")
+	# 反转 pass_dir:只允许从下往上(红兵前进方向)进入 => 放行
+	m.state.board.cell(0, 5).pass_dir = Vector2i(0, -1)
+	var mv2 := m.try_move(bing, 0, 5)
+	_check(mv2 != null, "pawn passes oneway when dir matches")
 
 func _test_terrain_limited() -> void:
 	print("[terrain: limited]")
@@ -367,20 +388,26 @@ func _test_temp_rule_effect() -> void:
 			has_own_side = true
 	_check(not has_crossed, "cannon cannot cross river under temp rule")
 	_check(has_own_side, "cannon still moves on own side")
-	# 车不受该规则影响
-	var ju := _piece(m.state, "red", 0, 9)
+	# 车不受该规则影响:构造红车 (5,5)(空格),沿 5 列北上可达 y<=4
+	var ju := Piece.new(m.piece_types["ju"], "red", 5, 5)
+	m.state.pieces.append(ju)
 	var ju_moves := MoveGen.piece_moves(m.state, ju)
 	var ju_cross_ok := false
 	for mv in ju_moves:
 		if mv.to_y <= 4:
 			ju_cross_ok = true
 	_check(ju_cross_ok, "chariot unaffected by no_pao_cross_river")
-	# 倒计时:走完 3 整回合后规则消失,炮恢复过河
+	m.state.pieces.erase(ju)
+	# 倒计时:红炮沿 7 行、黑炮沿 2 行各滑 3 步(每步合法且不涉过河列),
+	# 3 整回合后规则消失
+	var black_pao := _piece(m.state, "black", 1, 2)
+	var red_to := [Vector2i(0, 7), Vector2i(2, 7), Vector2i(3, 7)]
+	var black_to := [Vector2i(0, 2), Vector2i(2, 2), Vector2i(3, 2)]
 	for i in 3:
-		var b1 := _piece(m.state, "red", 8, 6)
-		m.try_move(b1, 8, 5)
-		var b2 := _piece(m.state, "black", 8, 3)
-		m.try_move(b2, 8, 4)
+		if m.try_move(pao, red_to[i].x, red_to[i].y) == null:
+			break
+		if m.try_move(black_pao, black_to[i].x, black_to[i].y) == null:
+			break
 	_check(not m.rules.has_temp_rule("no_pao_cross_river"),
 		"temp rule expires after 3 full rounds")
 	var moves2 := MoveGen.piece_moves(m.state, pao)
@@ -457,17 +484,23 @@ func _test_scenario() -> void:
 	sc.event_forecast.connect(func(_t: String) -> void: forecasts += 1)
 	sc.event_triggered.connect(func(_l: RuleOps.Log, _t: String) -> void: triggered += 1)
 	m.scenario = sc
-	# 走到第 3 整回合:回合 2 结束(即 full_rounds 从 1→2 后)触发 forecast,
-	# 回合 3 开始(黑方行动结束 full_rounds=2 后下一次黑结束 =3?按实现:黑结束 +1 后立即检查)
-	# 逐回合推进:红走 bing(8,6)->(8,5),黑走 bing(8,3)->(8,4)
-	var rounds := 0
-	while rounds < 13 and m.result == WinCond.Result.ONGOING:
-		var rb := _piece(m.state, "red", 8, 6)
-		var mv := m.try_move(rb, 8, 5)
-		if mv == null:
+	# 逐回合推进:首整回合红炮横移、黑卒 (8,3) 南下让出弓箭手落点;
+	# 之后双炮横向往返((2,7)↔(0,7) / (1,2)↔(0,2)),每步恒合法可重复。
+	# 事件时序:黑方第 k 步结束 => full_rounds=k,round_now=k+1;
+	# turn=N 事件在黑第 N-1 步后触发。首回合 + 10 往返 = full_rounds 11
+	# => turn≤11 的事件全部触发(造骑士/隆山/断路/神谕/改写胜负),
+	# turn=13 未触发 => 剧本未演完
+	var red_pao := _piece(m.state, "red", 1, 7)
+	var black_pao := _piece(m.state, "black", 1, 2)
+	var black_bing := _piece(m.state, "black", 8, 3)
+	m.try_move(red_pao, 2, 7)          # 首回合红:炮横移让出 0/1 列滑道
+	m.try_move(black_bing, 8, 4)       # 首回合黑:卒南下让出 (8,3)
+	var rounds := 1
+	while rounds < 11 and m.result == WinCond.Result.ONGOING:
+		var rx := 0 if rounds % 2 == 0 else 1
+		if m.try_move(red_pao, rx, 7) == null:
 			break
-		var bb := _piece(m.state, "black", 8, 3)
-		if bb == null or m.try_move(bb, 8, 4) == null:
+		if m.try_move(black_pao, 1 - rx, 2) == null:
 			break
 		rounds += 1
 	# 第 3 回合事件(黑骑士降临)应已触发
@@ -568,7 +601,12 @@ func _test_ai_search() -> void:
 	for p in m.state.pieces:
 		if not p.type.royal:
 			p.alive = false
-	# 盘面:双将 + 黑车 (0,0) 紧邻红车 (1,0):红先,最优 = 吃车
+	# 盘面:黑将退至 (4,2)(宫内后排,红车 (1,0) 沿 0 行够不着,否则 AI 直接
+	# 吃将秒杀),(4,3) 黑卒挡住对将线(否则红车横移暴露对脸被禁);
+	# 红车 (1,0) 吃 (0,0) 黑车 = 唯一吃子 => 搜索最优
+	var black_jiang := _piece(m.state, "black", 4, 0)
+	black_jiang.y = 2
+	m.state.pieces.append(Piece.new(m.piece_types["bing"], "black", 4, 3))
 	m.state.pieces.append(Piece.new(m.piece_types["ju"], "black", 0, 0))
 	var red_ju := Piece.new(m.piece_types["ju"], "red", 1, 0)
 	m.state.pieces.append(red_ju)
