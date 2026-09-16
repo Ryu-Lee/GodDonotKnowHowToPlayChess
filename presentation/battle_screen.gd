@@ -181,7 +181,7 @@ func _on_move_made(piece: Piece, to_x: int, to_y: int) -> void:
 	_play_action_anim(act, from_x, from_y)
 	# 玩家侧死锁兜底:tactics 棋子攻击后己方再无任何合法行动(经济耗尽
 	# 且无处可走)=> 自动弃权过手,否则回合永远停在红方。
-	if game.state.turn == player_faction:
+	if game.state.turn == board_view.player_faction:
 		game.pass_if_stuck()
 	_bind()
 	_refresh()
