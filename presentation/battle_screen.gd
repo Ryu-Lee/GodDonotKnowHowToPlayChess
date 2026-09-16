@@ -5,8 +5,6 @@ class_name BattleScreen
 extends Control
 
 const BOARD_VIEW := preload("res://presentation/board_view.gd")
-## AI 应手延时(秒):玩家落子演出播完、稍作停顿后再应手(思考节奏)。
-const AI_MOVE_DELAY := 0.5
 
 ## 对局结束请求(演出层给出按钮:重打 / 返回战役)。
 signal battle_finished(result: int)
@@ -26,6 +24,10 @@ var ai: AISearch = null
 var ai_depth := 2
 ## AI 搜索进行中(防重入:等待期间玩家又落子/悔棋)。
 var _ai_busy := false
+## 回合切换横幅:过场动画("红方行棋 / 黑方行棋")。
+var _turn_banner: Label
+## 横幅过场进行中(演出期间不响应新落子)。
+var _banner_showing := false
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(640, 360)
@@ -77,6 +79,40 @@ func _layout() -> void:
 	back_btn.pressed.connect(func() -> void: back_pressed.emit())
 	add_child(back_btn)
 
+	# 回合切换横幅:全宽条带,居中大字,平时隐藏
+	_turn_banner = Label.new()
+	_turn_banner.visible = false
+	_turn_banner.add_theme_font_size_override("font_size", 34)
+	_turn_banner.add_theme_color_override("font_color", Color("#ffd94a"))
+	_turn_banner.add_theme_color_override("font_outline_color", Color("#1a0e04"))
+	_turn_banner.add_theme_constant_override("outline_size", 6)
+	_turn_banner.size = Vector2(640, 60)
+	_turn_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_turn_banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(_turn_banner)
+
+## 回合切换过场:横幅从左侧滑入 → 居中停顿 → 右侧滑出。
+## 全程 async,由 _wait_banner 串联进 AI 应手流程。
+func _show_turn_banner(faction: String) -> void:
+	var text := "红方行棋" if faction == "red" else "黑方行棋"
+	_turn_banner.text = text
+	_turn_banner.add_theme_color_override("font_color",
+		Color("#e05038") if faction == "red" else Color("#c8b088"))
+	_turn_banner.modulate.a = 1.0
+	_turn_banner.visible = true
+	_banner_showing = true
+	var tw := create_tween()
+	# 滑入(从左缘外)→ 停顿 → 滑出(右缘外)→ 收尾
+	_turn_banner.position = Vector2(-640, 150)
+	tw.tween_property(_turn_banner, "position:x", 0.0, 0.22)\
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(0.45)
+	tw.tween_property(_turn_banner, "position:x", 640.0, 0.22)\
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	await tw.finished
+	_turn_banner.visible = false
+	_banner_showing = false
+
 # ---------------------------------------------------------------- 开局
 
 func _start_battle() -> void:
@@ -103,6 +139,7 @@ func _start_battle() -> void:
 	decree_label.text = ""
 	_bind()
 	_refresh()
+	_show_turn_banner("red")   # 开局过场:红先
 
 # ---------------------------------------------------------------- 交互
 
@@ -205,8 +242,8 @@ func _play_action_anim(act: Action, from_x: int, from_y: int) -> void:
 			if not target.alive:
 				board_view.anim_fade(target)
 
-## AI 行动(敌方回合)。推迟一帧再搜索:玩家落子先渲染,避免画面冻结。
-## 重入保护:等待期间局面已变(玩家悔棋/重打/再落子)则放弃本次应手。
+## AI 行动(敌方回合)。重入保护:等待期间局面已变(玩家悔棋/重打/
+## 再落子)则放弃本次应手。
 func _ai_move() -> void:
 	if ai == null or _ai_busy:
 		return
@@ -215,12 +252,18 @@ func _ai_move() -> void:
 	_ai_busy = true
 	_do_ai_move.call_deferred()
 
-## AI 应手循环:tactics 棋子"攻击后未移动"不结束回合,须继续应手直至
-## 回合交还红方。经济耗尽又无行动 => 引擎弃权兜底,防死锁。
+## AI 应手循环:先播"黑方行棋"过场(即回合切换演出,兼作应手延时),
+## 再连续应手直至回合交还红方(过场后不再额外延时,演出节奏连贯)。
+## tactics 棋子"攻击后未移动"不结束回合;经济耗尽又无行动 => 弃权兜底。
 ## _ai_busy 保持置位直至循环结束:期间玩家的悔棋/重打/落子被丢弃。
 func _do_ai_move() -> void:
-	await get_tree().create_timer(AI_MOVE_DELAY).timeout
+	await get_tree().process_frame
 	if ai == null or game == null:
+		_ai_busy = false
+		return
+	await _show_turn_banner("black")
+	if ai == null or game == null or game.result != WinCond.Result.ONGOING \
+			or game.state.turn != "black":
 		_ai_busy = false
 		return
 	while game.result == WinCond.Result.ONGOING and game.state.turn == "black":
