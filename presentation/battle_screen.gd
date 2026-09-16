@@ -5,6 +5,8 @@ class_name BattleScreen
 extends Control
 
 const BOARD_VIEW := preload("res://presentation/board_view.gd")
+## AI 应手延时(秒):玩家落子演出播完、稍作停顿后再应手(思考节奏)。
+const AI_MOVE_DELAY := 0.5
 
 ## 对局结束请求(演出层给出按钮:重打 / 返回战役)。
 signal battle_finished(result: int)
@@ -217,7 +219,7 @@ func _ai_move() -> void:
 ## 回合交还红方。经济耗尽又无行动 => 引擎弃权兜底,防死锁。
 ## _ai_busy 保持置位直至循环结束:期间玩家的悔棋/重打/落子被丢弃。
 func _do_ai_move() -> void:
-	await get_tree().process_frame
+	await get_tree().create_timer(AI_MOVE_DELAY).timeout
 	if ai == null or game == null:
 		_ai_busy = false
 		return
