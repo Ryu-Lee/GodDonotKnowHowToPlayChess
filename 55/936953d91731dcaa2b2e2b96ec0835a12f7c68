@@ -1,0 +1,23 @@
+presentation/battle_screen.gd
+  s_09245e0080122e::t_5f0a5ddd7d8dc1 142
+  s_09245e0080122e::t_66108ce59e4802 27-30
+  s_09245e0080122e::t_510690e172a0c1 245-246,255-257,260,264-266
+  s_09245e0080122e::t_7fcd23889764d4 82-115
+  s_09245e0080122e::t_2972ae0cbb81b4 267-268
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "55936953d91731dcaa2b2e2b96ec0835a12f7c68",
+  "prompts": {},
+  "sessions": {
+    "s_09245e0080122e": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "fae9a65b-321b-4199-80a3-f1ee799570ff",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
