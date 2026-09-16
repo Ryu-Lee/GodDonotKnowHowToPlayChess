@@ -52,6 +52,7 @@ func _run_tests() -> void:
 	_test_scenario()
 	_test_ai_search()
 	_test_ai_search_perf()
+	_test_tactics_turn_lockup()
 	print("=== Results: %d passed, %d failed ===" % [pass_count, fail_count])
 
 # ---------------------------------------------------------------- 测试用例
@@ -627,3 +628,58 @@ func _test_ai_search_perf() -> void:
 	_check(ms < 2000, "depth-2 full-board search under 2s (took %d ms)" % ms)
 	_check(ai.nodes <= AISearch.NODE_CAP, "node cap respected (%d nodes)" % ai.nodes)
 	print("  ...depth=2 nodes=%d time=%dms" % [ai.nodes, ms])
+
+# ---------------------------------------------------------------- M1 战术回合死锁回归
+
+## 复现 bug:黑 tactics 棋子只攻击未移动 => 回合停在黑方,玩家被锁死。
+## 覆盖:经济过滤的 AI 应手、pass_if_stuck 兜底、undo_until 回退。
+## 盘面构造:黑将 (4,0) 被己方士 (3,0),(5,0),(4,1),(3,2),(5,2) 围死
+## (士的斜线全被占/出宫 => 无一步可走),黑方唯一可动子 = 骑士 => AI 应手确定。
+func _test_tactics_turn_lockup() -> void:
+	print("[tactics turn lockup]")
+	var pack := _ruleops_with_fantasy()
+	var m := Match.new(pack["state"], pack["rules"], pack["piece_types"])
+	for p in m.state.pieces:
+		if not p.type.royal:
+			p.alive = false
+	var black_jiang := _piece(m.state, "black", 4, 0)
+	var red_jiang := _piece(m.state, "red", 4, 9)
+	_check(black_jiang != null and red_jiang != null, "both generals present")
+	for pos in [[3, 0], [5, 0], [4, 1], [3, 2], [5, 2]]:
+		m.state.pieces.append(Piece.new(m.piece_types["shi"], "black", pos[0], pos[1]))
+	var knight := Piece.new(m.piece_types["knight"], "black", 4, 8)
+	m.state.pieces.append(knight)
+	var red_shi := Piece.new(m.piece_types["shi"], "red", 4, 7)
+	m.state.pieces.append(red_shi)
+	_check(MoveGen.all_legal_moves(m.state, "black").all(
+		func(a: Action) -> bool: return a.piece == knight),
+		"knight is black's only mobile piece (deterministic AI pick)")
+	m.state.turn = "black"
+	# 1. 骑士近战攻击红士:士亡,反击无(象棋士无反击);回合停黑方(未移动)
+	var done := m.try_attack(knight, red_shi.x, red_shi.y, red_shi)
+	_check(done != null and not red_shi.alive and knight.alive,
+		"knight melee kills shi, no counter")
+	_check(m.state.turn == "black", "attack-only does not end turn (tactics)")
+	# 2. AI 应手:经济过滤后骑士攻击已消费 => 只能是骑士的移动
+	var ai := AISearch.new(2)
+	var act := ai.pick_action(m.state, m.rules, "black", m.acted)
+	_check(act != null and act.is_move() and act.piece == knight,
+		"AI follow-up is the knight's move (attack already spent)")
+	var done2 := m.try_move(act.piece, act.to_x, act.to_y)
+	_check(done2 != null, "follow-up move accepted")
+	_check(m.state.turn == "red", "turn returns to red after move+attack")
+	# 3. undo_until:从红方回合连续弹到红方行动前(攻击+移动一并撤销)
+	_check(m.undo_until("red"), "undo_until pops back to red turn")
+	_check(m.state.turn == "red", "still red turn after undo")
+	_check(red_shi.alive and red_shi.hp == 1, "shi revived with full hp")
+	_check(knight.x == 4 and knight.y == 8, "knight back at (4,8)")
+	# 4. pass_if_stuck:黑方经济耗尽且无任何行动 => 弃权过手(神谕换掉
+	#    困毙判负条件后的死锁兜底;此处换成 royal_captured 模拟)
+	m.rules.win_conditions.clear()
+	m.rules.win_conditions.append(RuleSet.WinCondition.from_dict(
+		{"id": "royal", "type": "royal_captured"}))
+	_check(not m.pass_if_stuck(), "red not stuck (jiang can move)")
+	knight.alive = false
+	m.state.turn = "black"
+	_check(m.pass_if_stuck(), "stuck black passes turn")
+	_check(m.state.turn == "red", "turn handed to red after pass")

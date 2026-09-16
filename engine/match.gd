@@ -118,6 +118,30 @@ func all_legal_actions(faction: String) -> Array[Action]:
 			out.append_array(legal_moves_for(p))
 	return out
 
+## 死锁兜底:当前方经济耗尽(如 tactics 棋子只攻击且无处可走)又无任何
+## 合法行动时,自动弃权过回合。返回 true = 已过手。
+func pass_if_stuck() -> bool:
+	if result != WinCond.Result.ONGOING:
+		return false
+	if not all_legal_actions(state.turn).is_empty():
+		return false
+	_pass_turn()
+	result = WinCond.evaluate(state, rules)
+	return true
+
+## 悔棋到指定阵营行动前:连续弹出直至重新轮到 faction
+## (AI 的应手与玩家的上一手一并撤销,标准"悔我上一手"语义)。
+## 返回是否弹出了行动。
+func undo_until(faction: String) -> bool:
+	var popped := false
+	while not history.is_empty():
+		if not undo_last():
+			break
+		popped = true
+		if state.turn == faction:
+			break
+	return popped
+
 # ---------------------------------------------------------------- 悔棋
 
 func undo_last() -> bool:
@@ -137,28 +161,43 @@ func undo_last() -> bool:
 	return true
 
 ## 重放历史恢复回合状态(悔棋后)。
-## limited 地形消费:重放前按原始消费记录逐条返还(否则重放会重复扣)。
+## limited 地形消费与攻击伤害:重放前按原始结算记录逐条逆序返还
+## (否则重放会重复扣通行次数 / 伤害翻倍)。
 func _rebuild_turn_state() -> void:
 	acted.clear()
-	state.turn = "red"
 	state.move_count = 0
+	state.full_rounds = 0   # 回放重计;_pass_turn 的副作用(神谕/倒计时)不重触发
 	# 逆序返还所有已消费的 limited 通行,重放时再按当下棋盘状态重新结算
 	for act in history:
 		if act.is_move():
 			MoveGen.refund_pass(state, act)
+	# 逆序返还攻击伤害(含反击;位置随 damage_log 复原,重放时再结算)
+	for i in range(history.size() - 1, -1, -1):
+		var a: Action = history[i]
+		if not a.is_move():
+			Combat.undo_attack(state, a)
 	var replayed: Array[Action] = history.duplicate()
 	history.clear()
+	# 起始回合 = 首个行动的阵营(悔棋可能弃掉红方全部行动,只剩黑方中途回合)
+	state.turn = replayed[0].piece.faction if not replayed.is_empty() else "red"
 	for act in replayed:
 		# 纯逻辑回放:不再校验,直接按经济结算
 		act.consumed_pass = false
 		if act.is_move():
+			# 被吃子已死仍占坐标:apply 会把 act.captured 覆写为 null
+			# (piece_at 跳过死子)=> 先存后还原,否则后续悔棋无法复活被吃子
+			var saved_captured := act.captured
 			MoveGen.apply(state, act)
+			act.captured = saved_captured
 			MoveGen.consume_pass(state, act)
 		else:
 			Combat.apply_attack(state, act)
 		history.append(act)
 		if _ends_turn(act.piece, act.kind):
-			_pass_turn()
+			# 纯翻面 + 回合计数(不走 _pass_turn:重放不重触发神谕/临时规则倒计时)
+			if state.turn == "black":
+				state.full_rounds += 1
+			state.turn = "black" if state.turn == "red" else "red"
 
 func notation_log() -> Array[String]:
 	var out: Array[String] = []

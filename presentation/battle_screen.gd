@@ -179,6 +179,10 @@ func _on_move_made(piece: Piece, to_x: int, to_y: int) -> void:
 	if act == null:
 		act = game.try_move(piece, to_x, to_y)
 	_play_action_anim(act, from_x, from_y)
+	# 玩家侧死锁兜底:tactics 棋子攻击后己方再无任何合法行动(经济耗尽
+	# 且无处可走)=> 自动弃权过手,否则回合永远停在红方。
+	if game.state.turn == player_faction:
+		game.pass_if_stuck()
 	_bind()
 	_refresh()
 	_ai_move()
@@ -209,24 +213,39 @@ func _ai_move() -> void:
 	_ai_busy = true
 	_do_ai_move.call_deferred()
 
+## AI 应手循环:tactics 棋子"攻击后未移动"不结束回合,须继续应手直至
+## 回合交还红方。经济耗尽又无行动 => 引擎弃权兜底,防死锁。
+## _ai_busy 保持置位直至循环结束:期间玩家的悔棋/重打/落子被丢弃。
 func _do_ai_move() -> void:
 	await get_tree().process_frame
-	_ai_busy = false
 	if ai == null or game == null:
+		_ai_busy = false
 		return
-	if game.result != WinCond.Result.ONGOING or game.state.turn != "black":
-		return
-	var act := ai.pick_action(game.state, game.rules, "black")
-	if act == null:
-		return
-	var from_x := act.piece.x
-	var from_y := act.piece.y
-	if act.is_move():
-		game.try_move(act.piece, act.to_x, act.to_y)
-	else:
-		game.try_attack(act.piece, act.to_x, act.to_y, act.target)
-	_play_action_anim(act, from_x, from_y)
-	_bind()
+	while game.result == WinCond.Result.ONGOING and game.state.turn == "black":
+		var act := ai.pick_action(game.state, game.rules, "black", game.acted)
+		if act == null:
+			game.pass_if_stuck()
+			break
+		var from_x := act.piece.x
+		var from_y := act.piece.y
+		var done: Action
+		if act.is_move():
+			done = game.try_move(act.piece, act.to_x, act.to_y)
+		else:
+			done = game.try_attack(act.piece, act.to_x, act.to_y, act.target)
+		if done == null:
+			# 经济闸拒绝(不应发生,根行动已过滤):弃权防死循环
+			game.pass_if_stuck()
+			break
+		_play_action_anim(done, from_x, from_y)
+		_bind()
+		_refresh()
+		if game.state.turn == "black":
+			# 连续应手之间隔一帧:演出逐手播放,且给重入检查留出时点
+			await get_tree().process_frame
+			if ai == null or game == null:
+				break
+	_ai_busy = false
 	_refresh()
 
 # ---------------------------------------------------------------- 演出
@@ -298,7 +317,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_Z:
-				if game != null and game.undo_last():
+				if game != null and game.undo_until("red"):
 					board_view.reset_anims()   # 状态跳变:进行中的演出已无意义
 					_bind()
 					_refresh()
