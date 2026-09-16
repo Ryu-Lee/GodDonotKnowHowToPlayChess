@@ -17,6 +17,8 @@ var hint_label: Label
 var decree_label: Label
 ## 棋子信息面板(固定右侧):点任意棋子显示走法/攻击说明。
 var info_label: Label
+## 操作历史面板(固定左侧):逐回合列出双方行动。
+var history_label: Label
 ## 本关配置(campaign battles[i])。
 var battle: Dictionary = {}
 var ai: AISearch = null
@@ -49,14 +51,22 @@ func _layout() -> void:
 
 	# 棋子信息面板:右侧固定位置
 	info_label = Label.new()
-	info_label.position = Vector2(420, 34)
-	info_label.size = Vector2(214, 300)
-	info_label.add_theme_font_size_override("font_size", 11)
+	info_label.position = Vector2(478, 34)
+	info_label.size = Vector2(158, 300)
+	info_label.add_theme_font_size_override("font_size", 10)
 	info_label.add_theme_color_override("font_color", Color("#c8b088"))
 	add_child(info_label)
 
+	# 操作历史面板:左侧(每回合双方行动流水)
+	history_label = Label.new()
+	history_label.position = Vector2(6, 34)
+	history_label.size = Vector2(160, 306)
+	history_label.add_theme_font_size_override("font_size", 9)
+	history_label.add_theme_color_override("font_color", Color("#a89878"))
+	add_child(history_label)
+
 	status_label = Label.new()
-	status_label.position = Vector2(12, 2)
+	status_label.position = Vector2(178, 2)
 	status_label.add_theme_font_size_override("font_size", 13)
 	add_child(status_label)
 
@@ -66,7 +76,7 @@ func _layout() -> void:
 	add_child(hint_label)
 
 	decree_label = Label.new()
-	decree_label.position = Vector2(12, 22)
+	decree_label.position = Vector2(178, 22)
 	decree_label.add_theme_font_size_override("font_size", 12)
 	decree_label.add_theme_color_override("font_color", Color("#d9a8ff"))
 	add_child(decree_label)
@@ -267,7 +277,7 @@ func _do_ai_move() -> void:
 		_ai_busy = false
 		return
 	while game.result == WinCond.Result.ONGOING and game.state.turn == "black":
-		var act := ai.pick_action(game.state, game.rules, "black", game.acted)
+		var act := ai.pick_action(game.state, game.rules, "black", game.acted, game.turn_piece)
 		if act == null:
 			game.pass_if_stuck()
 			break
@@ -346,11 +356,57 @@ func _refresh() -> void:
 	if game.result != WinCond.Result.ONGOING:
 		status_label.text = "%s  —  %s" % [title, WinCond.result_name(game.result)]
 		hint_label.text = "对局结束 | Z: 悔棋  R: 重打  ←: 返回战役"
+		_refresh_history()
 	else:
 		var side := "红方行棋" if game.state.turn == "red" else (
 			"神在思考…" if ai_on else "黑方行棋")
 		status_label.text = "%s  —  %s  第 %d 手" % [title, side, game.state.move_count + 1]
 		hint_label.text = "点选棋子走子(红先) | Z: 悔棋  ESC: 设置  ←: 返回战役"
+	_refresh_history()
+
+## 操作历史:按回合分组重演双方行动(悔棋/重打后全量重建)。
+## 行动序列由 history 顺序 + act.round/ended_turn 戳还原:
+## 同回合内行动归并为一行,如"回合3:我方骑士 移到(4,6) 攻击 士"。
+func _refresh_history() -> void:
+	var lines: Array[String] = ["【战报】"]
+	var round_no := 0
+	var round_line := ""
+	for act in game.history:
+		if act.round != round_no:
+			# 新回合开行(前一回合若有内容已入表)
+			round_no = act.round
+			round_line = "回合%d:" % round_no
+		round_line += _describe_action(act)
+		if act.ended_turn:
+			lines.append(round_line)
+			round_line = ""
+	if not round_line.is_empty():
+		lines.append(round_line)   # 进行中的半回合
+	# 只留最近 ~26 行(面板可视高度)
+	while lines.size() > 27:
+		lines.pop_front()
+	history_label.text = "\n".join(lines)
+
+## 单条行动描述(拼进回合行)。
+func _describe_action(act: Action) -> String:
+	var who := "我方" if act.piece.faction == board_view.player_faction else "对方"
+	var name := act.piece.type.display_name
+	if act.is_move():
+		if act.captured != null:
+			return " %s%s 移到(%d,%d)吃%s" % [who, name,
+				act.to_x, act.to_y, act.captured.type.display_name]
+		return " %s%s 移到(%d,%d)" % [who, name, act.to_x, act.to_y]
+	# 攻击:伤害/击杀一览
+	var hits: Array[String] = []
+	for entry in act.damage_log:
+		var t: Piece = entry["piece"]
+		if bool(entry.get("killed", false)):
+			hits.append("击杀%s" % t.type.display_name)
+		else:
+			hits.append("伤%s%d" % [t.type.display_name, int(entry["dmg"])])
+	if hits.is_empty():
+		return " %s%s 攻击落空" % [who, name]
+	return " %s%s 攻击%s" % [who, name, "、".join(hits)]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:

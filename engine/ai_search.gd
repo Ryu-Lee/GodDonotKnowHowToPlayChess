@@ -20,10 +20,11 @@ func _init(d: int = 2) -> void:
 ## 选出当前方最佳行动(移动或攻击)。无行动返回 null。
 ## acted:本回合已行动记录(Match.acted)——经济已耗尽的行动不再入选,
 ## 否则 AI 连续应手时会反复挑已消费的攻击,submit 拒绝 => 死循环。
+## turn_piece:本回合已行动棋子(单子操作锁)——其他棋子的行动不再入选。
 func pick_action(state: MatchState, rules: RuleSet, faction: String,
-		acted: Dictionary = {}) -> Action:
+		acted: Dictionary = {}, turn_piece: Piece = null) -> Action:
 	nodes = 0
-	var acts := _root_actions(state, rules, faction, acted)
+	var acts := _root_actions(state, rules, faction, acted, turn_piece)
 	if acts.is_empty():
 		return null
 	_sort_actions(state, acts)
@@ -95,9 +96,10 @@ func _terminal_score(state: MatchState, rules: RuleSet, faction: String, ply: in
 
 ## 根节点行动:走法过引擎合法性闸(不送将),保证 try_move 必被接受;
 ## 攻击由 Combat 生成即为合法(攻击不位移,无送将概念)。
-## acted:经济过滤——已移动棋子的走法与已攻击棋子的攻击剔除。
+## acted / turn_piece:经济与单子操作锁过滤——已移动棋子的走法、
+## 已攻击棋子的攻击、锁定期内其他棋子的全部行动剔除。
 func _root_actions(state: MatchState, _rules: RuleSet, faction: String,
-		acted: Dictionary = {}) -> Array[Action]:
+		acted: Dictionary = {}, turn_piece: Piece = null) -> Array[Action]:
 	var out: Array[Action] = []
 	var moved_ids := {}
 	var attacked_ids := {}
@@ -108,11 +110,13 @@ func _root_actions(state: MatchState, _rules: RuleSet, faction: String,
 		if rec.get("attacked", false):
 			attacked_ids[pid] = true
 	for mv in MoveGen.all_legal_moves(state, faction):
-		if not moved_ids.has(mv.piece.get_instance_id()):
+		if not moved_ids.has(mv.piece.get_instance_id()) \
+				and (turn_piece == null or mv.piece == turn_piece):
 			out.append(mv)
 	for p in state.pieces:
 		if p.alive and p.faction == faction and p.type.action_economy == "tactics" \
-				and not attacked_ids.has(p.get_instance_id()):
+				and not attacked_ids.has(p.get_instance_id()) \
+				and (turn_piece == null or p == turn_piece):
 			out.append_array(Combat.all_attacks(state, p))
 	return out
 

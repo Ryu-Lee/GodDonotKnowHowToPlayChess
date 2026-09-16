@@ -13,6 +13,9 @@ var history: Array[Action] = []
 var result: int = WinCond.Result.ONGOING
 ## 本回合 tactics 棋子已行动记录 {piece_instance_id: {"moved": bool, "attacked": bool}}。
 var acted: Dictionary = {}
+## 本回合已行动的棋子(同回合只能操作同一棋子: tactics 棋子移动/攻击后,
+## 本回合内不可再换其他棋子行动;回合结束清空)。null = 本回合尚未有棋子行动。
+var turn_piece: Piece = null
 
 func _init(s: MatchState, r: RuleSet, ptypes: Dictionary) -> void:
 	state = s
@@ -37,6 +40,7 @@ func _ends_turn(p: Piece, kind: int) -> bool:
 
 func _pass_turn() -> void:
 	acted.clear()
+	turn_piece = null
 	# 黑方行动结束 = 整回合结束:临时规则倒计时 + 神谕阶段(下一回合开始)
 	if state.turn == "black":
 		state.full_rounds += 1
@@ -64,13 +68,19 @@ func submit(act: Action) -> Action:
 			return null
 		Combat.apply_attack(state, act)
 	history.append(act)
-	if _ends_turn(act.piece, act.kind):
+	turn_piece = act.piece
+	act.round = state.full_rounds + 1   # 1 基回合号(红先手即回合1)
+	act.ended_turn = _ends_turn(act.piece, act.kind)
+	if act.ended_turn:
 		_pass_turn()
 	result = WinCond.evaluate(state, rules)
 	return act
 
-## 行动经济闸:tactics 棋子本回合已做过的行动类型不可重复。
+## 行动经济闸:tactics 棋子本回合已做过的行动类型不可重复;
+## 且本回合已有棋子行动时,后续行动必须是同一棋子(单子操作锁)。
 func _economy_allows(act: Action) -> bool:
+	if turn_piece != null and act.piece != turn_piece:
+		return false
 	var rec: Dictionary = acted.get_or_add(act.piece.get_instance_id(), {})
 	if act.is_move() and rec.get("moved", false):
 		return false
@@ -97,6 +107,9 @@ func _is_legal_attack(act: Action) -> bool:
 
 func legal_moves_for(piece: Piece) -> Array[Action]:
 	if result != WinCond.Result.ONGOING or piece.faction != state.turn:
+		return []
+	# 单子操作锁:本回合已有其他棋子行动 => 此棋子不可再动
+	if turn_piece != null and piece != turn_piece:
 		return []
 	var out: Array[Action] = []
 	var rec: Dictionary = acted.get_or_add(piece.get_instance_id(), {})
@@ -165,6 +178,7 @@ func undo_last() -> bool:
 ## (否则重放会重复扣通行次数 / 伤害翻倍)。
 func _rebuild_turn_state() -> void:
 	acted.clear()
+	turn_piece = null
 	state.move_count = 0
 	state.full_rounds = 0   # 回放重计;_pass_turn 的副作用(神谕/倒计时)不重触发
 	# 逆序返还所有已消费的 limited 通行,重放时再按当下棋盘状态重新结算
@@ -193,11 +207,15 @@ func _rebuild_turn_state() -> void:
 		else:
 			Combat.apply_attack(state, act)
 		history.append(act)
-		if _ends_turn(act.piece, act.kind):
+		turn_piece = act.piece
+		act.round = state.full_rounds + 1
+		act.ended_turn = _ends_turn(act.piece, act.kind)
+		if act.ended_turn:
 			# 纯翻面 + 回合计数(不走 _pass_turn:重放不重触发神谕/临时规则倒计时)
 			if state.turn == "black":
 				state.full_rounds += 1
 			state.turn = "black" if state.turn == "red" else "red"
+			turn_piece = null
 
 func notation_log() -> Array[String]:
 	var out: Array[String] = []

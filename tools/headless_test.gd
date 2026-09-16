@@ -53,6 +53,7 @@ func _run_tests() -> void:
 	_test_ai_search()
 	_test_ai_search_perf()
 	_test_tactics_turn_lockup()
+	_test_turn_piece_lock()
 	print("=== Results: %d passed, %d failed ===" % [pass_count, fail_count])
 
 # ---------------------------------------------------------------- 测试用例
@@ -683,3 +684,40 @@ func _test_tactics_turn_lockup() -> void:
 	m.state.turn = "black"
 	_check(m.pass_if_stuck(), "stuck black passes turn")
 	_check(m.state.turn == "red", "turn handed to red after pass")
+
+# ---------------------------------------------------------------- 同回合单子操作锁
+
+## 一回合只许操作同一棋子:tactics 棋子移动后,换其他棋子行动被拒;
+## 悔棋重放后锁状态正确恢复。
+func _test_turn_piece_lock() -> void:
+	print("[turn piece lock]")
+	var pack := _ruleops_with_fantasy()
+	var m := Match.new(pack["state"], pack["rules"], pack["piece_types"])
+	for p in m.state.pieces:
+		if not p.type.royal:
+			p.alive = false
+	m.state.pieces.append(Piece.new(m.piece_types["knight"], "black", 4, 8))
+	m.state.pieces.append(Piece.new(m.piece_types["knight"], "black", 5, 8))
+	m.state.turn = "black"
+	# 骑士A 移动(未攻击):回合停黑方,turn_piece 锁定骑士A
+	var ka := m.state.piece_at(4, 8)
+	var kb := m.state.piece_at(5, 8)
+	var mv := m.try_move(ka, 4, 6)
+	_check(mv != null and m.state.turn == "black", "knight A moves, turn stays black")
+	_check(m.turn_piece == ka, "turn locked to knight A")
+	# 骑士B 被锁:submit 拒绝
+	_check(m.try_move(kb, 5, 6) == null, "knight B locked out (single-piece turn)")
+	# AI 根行动过滤:只含骑士A 的行动
+	var ai := AISearch.new(2)
+	var act := ai.pick_action(m.state, m.rules, "black", m.acted, m.turn_piece)
+	_check(act != null and act.piece == ka, "AI follow-up restricted to knight A")
+	# 骑士A 攻击用尽经济 => 回合交还
+	var att := m.try_attack(ka, ka.x, ka.y + 1, null)
+	_check(m.state.turn == "red" and m.turn_piece == null,
+		"turn passes and lock cleared after A's move+attack")
+	# 悔棋重放:黑方中途回合恢复,锁回到骑士A
+	m.undo_until("black")
+	_check(m.state.turn == "black" and m.turn_piece == ka,
+		"replay restores mid-turn lock on knight A")
+	# 解锁后骑士B 又可行动(重放到回合结束后)
+	_check(m.try_move(kb, 5, 6) != null, "knight B free again after turn pass")

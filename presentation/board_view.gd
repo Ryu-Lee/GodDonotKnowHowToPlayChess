@@ -7,11 +7,12 @@ signal move_made(piece: Piece, to_x: int, to_y: int)
 ## 点选任意棋子(敌我皆可) => 信息面板显示说明。
 signal piece_inspected(piece: Piece)
 
-const CELL := 34          # 格距(像素,640×360 下 9×10 棋盘 = 272×306 内含边距)
-## 居中偏移:棋盘含边框 324×326;右侧留 150px 信息面板 => 板心 x = (640-150-324)/2 + 26
-const MARGIN_X := 109.0
-const MARGIN_Y := 27.0
-const PIECE_R := 14.0
+const CELL := 28          # 格距(像素,640×360 下 9×10 棋盘留出左侧历史面板)
+## 居中偏移:棋盘含边框 276×272;左侧 168px 历史面板,右侧 176px 信息面板
+## => 板心 x = 168 + (640-168-176-276)/2 + 26 = 202
+const MARGIN_X := 202.0
+const MARGIN_Y := 50.0
+const PIECE_R := 11.5
 
 var game: Match
 ## 玩家阵营(由 battle_screen 按关卡配置注入):只允许操作己方棋子。
@@ -261,8 +262,8 @@ func _draw_board() -> void:
 	if river_top >= 0:
 		var mid_y: float = (_to_screen(0, river_top).y + _to_screen(0, river_bottom).y) / 2.0
 		var font := ThemeDB.fallback_font
-		draw_string(font, Vector2(205, mid_y + 8), "楚 河          汉 界",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("#8a6a2f"))
+		draw_string(font, Vector2(MARGIN_X - 42, mid_y + 7), "楚 河    汉 界",
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#8a6a2f"))
 	# 九宫斜线(闭区间角点:左上-右下 / 右上-左下)
 	for faction in ["red", "black"]:
 		var r: Rect2i = b.palace_rect(faction)
@@ -310,12 +311,12 @@ func _draw_pieces() -> void:
 		# 多血棋子:血点显示
 		if p.type.hp > 1:
 			for i in p.hp:
-				draw_circle(c + Vector2(-6.0 + 4.0 * i, 9.0), 1.6, Color("#b03030"))
+				draw_circle(c + Vector2(-5.0 + 3.5 * i, 7.5), 1.4, Color("#b03030"))
 		var glyph: String = _glyph(p)
 		var font := ThemeDB.fallback_font
 		var col := Color("#b03030") if is_red else Color("#222222")
-		draw_string(font, c + Vector2(-PIECE_R + 2, 7), glyph,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 18, col)
+		draw_string(font, c + Vector2(-PIECE_R + 2, 5), glyph,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 15, col)
 
 ## 动画层绘制:移动滑行 / 攻击突进(棋子本体被隐藏,由这里插值绘制)。
 func _draw_anims() -> void:
@@ -391,8 +392,8 @@ func _draw_piece_at(p: Piece, pos: Vector2, alpha: float, dead := false) -> void
 	var font := ThemeDB.fallback_font
 	var col := Color("#b03030") if is_red else Color("#222222")
 	col.a = alpha
-	draw_string(font, pos + Vector2(-PIECE_R + 2, 7), _glyph(p),
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 18, col)
+	draw_string(font, pos + Vector2(-PIECE_R + 2, 5), _glyph(p),
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 15, col)
 
 ## 受击红闪:半透明红罩 + 原棋子重绘于抖动位置。
 func _draw_hit_flash(p: Piece, jitter: Vector2, intensity: float) -> void:

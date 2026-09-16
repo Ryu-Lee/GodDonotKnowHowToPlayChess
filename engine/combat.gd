@@ -172,9 +172,11 @@ static func _can_counter(_state: MatchState, defender: Piece, _attacker: Piece) 
 
 static func _deal(act: Action, target: Piece, dmg: int) -> void:
 	target.hp -= dmg
+	var killed := target.hp <= 0
 	act.damage_log.append({
-		"piece": target, "dmg": dmg, "x": target.x, "y": target.y
+		"piece": target, "dmg": dmg, "x": target.x, "y": target.y,
+		"killed": killed
 	})
-	if target.hp <= 0:
+	if killed:
 		target.hp = 0
 		target.alive = false
