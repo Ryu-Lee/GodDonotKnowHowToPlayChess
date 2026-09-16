@@ -1,0 +1,49 @@
+engine/ai_search.gd
+  s_09245e0080122e::t_d744a1022fc0ab 99-100,102,113-114,118-119
+  s_09245e0080122e::t_a59c0844f27718 23,25,27
+presentation/battle_screen.gd
+  s_09245e0080122e::t_dc5d7da452d155 20-21
+  s_09245e0080122e::t_edaeced66aaa6c 365-409
+  s_09245e0080122e::t_9df93b0777e4ac 79
+  s_09245e0080122e::t_c843b0adeb4003 359
+  s_09245e0080122e::t_8b8d7b08d7ecec 54-56,60-67,69
+  s_09245e0080122e::t_db70e49a9919db 280
+engine/match.gd
+  s_09245e0080122e::t_d44b8a9085569c 72-74
+  s_09245e0080122e::t_3c8fe194387382 181
+  s_09245e0080122e::t_fc903d49df1a73 43
+  s_09245e0080122e::t_ebfdb6b5eb6933 210-213
+  s_09245e0080122e::t_24648abf36a04f 218
+  s_09245e0080122e::t_e238b38f345c09 111-113
+  s_09245e0080122e::t_198679edf107cd 16-18
+  s_09245e0080122e::t_9b1c1dc4026076 79-80,82-83
+  s_09245e0080122e::t_e4d3df070d288f 71
+engine/combat.gd
+  s_09245e0080122e::t_52c4f7eace7952 175,177-178,180
+engine/action.gd
+  s_09245e0080122e::t_49d16945d6296d 21-24
+tools/headless_test.gd
+  s_09245e0080122e::t_06369afb6bc091 687-723
+  s_09245e0080122e::t_2885e16147b85c 56
+presentation/board_view.gd
+  s_09245e0080122e::t_575130fd101c98 395-396
+  s_09245e0080122e::t_6c399c524384f6 265-266
+  s_09245e0080122e::t_2c9245f1d81c94 10-15
+  s_09245e0080122e::t_40fbb7e657acc8 314,318-319
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "db2a838d9a9454f8ebf88c4e7f184668a603691a",
+  "prompts": {},
+  "sessions": {
+    "s_09245e0080122e": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "fae9a65b-321b-4199-80a3-f1ee799570ff",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
