@@ -1,0 +1,35 @@
+presentation/battle_screen.gd
+  s_09245e0080122e::t_c5f59991f99add 216-217,224-242
+  s_09245e0080122e::t_da0a5c7cafb139 182-185
+  s_09245e0080122e::t_2e112becea2c0a 320
+  s_09245e0080122e::t_70c93f87793f0b 218,222,243-248
+engine/match.gd
+  s_09245e0080122e::t_cc4f42f66606ea 164-165,174-178
+  s_09245e0080122e::t_0dd476073a2d3d 169
+  s_09245e0080122e::t_8b9bd8f389d740 181-182,187-189,191
+  s_09245e0080122e::t_f9b02460974d49 197-200
+  s_09245e0080122e::t_2593ccdbc59118 121-144
+tools/headless_test.gd
+  s_09245e0080122e::t_175bfc444848a1 631-635,638-646,650-653,659,662,664-670,672-673,675,683
+  s_09245e0080122e::t_66af12dbbf3bcf 636-637,647-649,654-658,660-661,663,671,674,676-682,684-685
+  s_09245e0080122e::t_d2542197127276 55
+engine/ai_search.gd
+  s_09245e0080122e::t_5ba4f4539d2729 21-24,26
+  s_09245e0080122e::t_3e5b07e7ebb81c 98-100,102-112,114-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "058ae46f81222f711d80313e345913fcb7dc32ee",
+  "prompts": {},
+  "sessions": {
+    "s_09245e0080122e": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "fae9a65b-321b-4199-80a3-f1ee799570ff",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
