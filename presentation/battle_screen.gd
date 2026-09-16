@@ -94,10 +94,10 @@ func _layout() -> void:
 ## 回合切换过场:横幅从左侧滑入 → 居中停顿 → 右侧滑出。
 ## 全程 async,由 _wait_banner 串联进 AI 应手流程。
 func _show_turn_banner(faction: String) -> void:
-	var text := "红方行棋" if faction == "red" else "黑方行棋"
+	var text := "你的回合" if faction == board_view.player_faction else "对方回合"
 	_turn_banner.text = text
 	_turn_banner.add_theme_color_override("font_color",
-		Color("#e05038") if faction == "red" else Color("#c8b088"))
+		Color("#e05038") if faction == board_view.player_faction else Color("#c8b088"))
 	_turn_banner.modulate.a = 1.0
 	_turn_banner.visible = true
 	_banner_showing = true
