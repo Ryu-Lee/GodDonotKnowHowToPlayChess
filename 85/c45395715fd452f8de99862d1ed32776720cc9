@@ -1,0 +1,19 @@
+presentation/board_view.gd
+  s_09245e0080122e::t_36ebc9ae266268 261
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "85c45395715fd452f8de99862d1ed32776720cc9",
+  "prompts": {},
+  "sessions": {
+    "s_09245e0080122e": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "fae9a65b-321b-4199-80a3-f1ee799570ff",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
