@@ -37,6 +37,8 @@ static func piece_moves(state: MatchState, p: Piece) -> Array[Action]:
 		"rider":
 			for v in use_pattern:
 				_scan_rider(state, p, v, out)
+		"walk":
+			_scan_walk(state, p, out)
 		"script":
 			push_error("Script move type not implemented yet")
 	return out
@@ -109,7 +111,8 @@ static func _scan_rider(state: MatchState, p: Piece, v: Vector2i, out: Array[Act
 	var cy := p.y
 	var screens := 0
 	var screened := false   # 炮已越架:此后空格不再是合法落点
-	for i in MAX_DEPTH_SCAN:
+	var depth := p.type.move_range if p.type.move_range > 0 else MAX_DEPTH_SCAN
+	for i in depth:
 		cx += v.x
 		cy += v.y
 		if not board.in_bounds(cx, cy):
@@ -136,6 +139,48 @@ static func _scan_rider(state: MatchState, p: Piece, v: Vector2i, out: Array[Act
 			if occ.faction != p.faction:
 				out.append(Action.new(p, cx, cy, Action.Kind.MOVE))
 			return
+
+# ---------------------------------------------------------------- walk(战棋步行)
+
+## 战棋式移动:正交步进 BFS,曼哈顿距离 <= move_range 的可达空格皆为落点;
+## 途中格须通行(地形)+ 无人占据(不可穿子),终点可落在敌格(占据式吃)。
+## 与象棋模型的区别:不按 pattern 向量,按"步行距离"衡量机动性,路径可拐弯绕障。
+static func _scan_walk(state: MatchState, p: Piece, out: Array[Action]) -> void:
+	var board := state.board
+	var range := p.type.move_range
+	if range <= 0:
+		range = MAX_DEPTH_SCAN
+	var start := Vector2i(p.x, p.y)
+	var dist := {start: 0}
+	var queue: Array[Vector2i] = [start]
+	while not queue.is_empty():
+		var cur: Vector2i = queue.pop_front()
+		if dist[cur] >= range:
+			continue
+		for dv in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var nxt: Vector2i = cur + dv
+			if nxt.x < 0 or nxt.x >= board.width or nxt.y < 0 or nxt.y >= board.height:
+				continue
+			if dist.has(nxt):
+				continue
+			# 途经格必须无人:敌我棋子皆挡路(不可穿越)
+			var occ := state.piece_at(nxt.x, nxt.y)
+			if occ != null:
+				# 敌子:可作终点(占据式吃),不继续扩展
+				if occ.faction != p.faction:
+					var dd: int = dist[cur] + 1
+					dist[nxt] = dd
+					if dd <= range and passable(state, p, nxt.x, nxt.y) \
+							and not _temp_rule_blocks(state, p, nxt.x, nxt.y):
+						out.append(Action.new(p, nxt.x, nxt.y, Action.Kind.MOVE))
+				continue
+			# 空格:通行 + 无临时规则禁令 => 落点,继续扩展
+			if not passable(state, p, nxt.x, nxt.y):
+				continue
+			dist[nxt] = dist[cur] + 1
+			if not _temp_rule_blocks(state, p, nxt.x, nxt.y):
+				out.append(Action.new(p, nxt.x, nxt.y, Action.Kind.MOVE))
+			queue.append(nxt)
 
 # ---------------------------------------------------------------- 临时规则(M1)
 

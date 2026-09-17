@@ -5,8 +5,9 @@ extends RefCounted
 var id: String
 var display_name: String
 var tier: String = "classic"          # classic / fantasy
-var move_type: String = ""            # step / zone_step / leaper / rider / script
+var move_type: String = ""            # step / zone_step / leaper / rider / walk / script
 var pattern: Array[Vector2i] = []     # 走法向量
+var move_range: int = 0                   # rider 单方向最大格数 / walk 步行距离(0 = 不限)
 var crossed_pattern: Array[Vector2i] = []  # 兵过河后的 pattern(空 = 同 pattern)
 var zone: String = ""                 # "", "palace_own", "own_half", "forward_only_before_cross"
 var blockers: Array[String] = []      # 阻挡判定 id: ma_leg / xiang_eye
@@ -31,6 +32,7 @@ static func from_dict(d: Dictionary) -> PieceType:
 	var mv: Dictionary = d.get("move", {})
 	pt.move_type = mv.get("type", "step")
 	pt.pattern = _to_vecs(mv.get("pattern", []))
+	pt.move_range = int(mv.get("range", 0))
 	pt.crossed_pattern = _to_vecs(mv.get("crossed_pattern", []))
 	pt.zone = mv.get("zone", "")
 	pt.blockers = _str_arr(mv.get("blockers", []))

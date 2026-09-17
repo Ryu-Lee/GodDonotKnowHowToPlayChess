@@ -57,10 +57,11 @@ func _layout() -> void:
 	info_label.add_theme_color_override("font_color", Color("#c8b088"))
 	add_child(info_label)
 
-	# 操作历史面板:左侧(每回合双方行动流水)
+	# 操作历史面板:左侧(每回合双方行动流水;autowrap 防长行压到棋盘)
 	history_label = Label.new()
 	history_label.position = Vector2(6, 34)
 	history_label.size = Vector2(160, 306)
+	history_label.autowrap_mode = TextServer.BREAK_MANDATORY
 	history_label.add_theme_font_size_override("font_size", 9)
 	history_label.add_theme_color_override("font_color", Color("#a89878"))
 	add_child(history_label)
@@ -185,7 +186,7 @@ func _move_desc(p: Piece) -> String:
 				leg = "(塞象眼)"
 			return "移动:跳跃%s" % leg
 		"rider":
-			# 斜向 pattern(如神造骑士)= 连续跳跃;正交 pattern = 直线滑行
+			# 斜向 pattern = 连续跳跃;正交 pattern = 直线滑行
 			var diagonal := false
 			for v in t.pattern:
 				if v.x != 0 and v.y != 0:
@@ -196,6 +197,8 @@ func _move_desc(p: Piece) -> String:
 			if t.capture_mode == "screen":
 				return "移动:直线滑行;吃子需隔一子(炮架)"
 			return "移动:直线滑行,遇子而止"
+		"walk":
+			return "移动:战棋步行,至多 %d 格(可绕行,不可穿子)" % t.move_range
 		_:
 			return "移动:特殊"
 
@@ -366,36 +369,30 @@ func _refresh() -> void:
 
 ## 操作历史:按回合分组重演双方行动(悔棋/重打后全量重建)。
 ## 行动序列由 history 顺序 + act.round/ended_turn 戳还原:
-## 同回合内行动归并为一行,如"回合3:我方骑士 移到(4,6) 攻击 士"。
+## 回合标题独占一行,其后每条行动各占一行(autowrap 负责折行)。
 func _refresh_history() -> void:
 	var lines: Array[String] = ["【战报】"]
 	var round_no := 0
-	var round_line := ""
 	for act in game.history:
 		if act.round != round_no:
-			# 新回合开行(前一回合若有内容已入表)
+			# 新回合:标题行 + 之前累积的行动行(已在循环尾入表)
 			round_no = act.round
-			round_line = "回合%d:" % round_no
-		round_line += _describe_action(act)
-		if act.ended_turn:
-			lines.append(round_line)
-			round_line = ""
-	if not round_line.is_empty():
-		lines.append(round_line)   # 进行中的半回合
+			lines.append("回合%d:" % round_no)
+		lines.append(_describe_action(act))
 	# 只留最近 ~26 行(面板可视高度)
 	while lines.size() > 27:
 		lines.pop_front()
 	history_label.text = "\n".join(lines)
 
-## 单条行动描述(拼进回合行)。
+## 单条行动描述(独占一行)。
 func _describe_action(act: Action) -> String:
 	var who := "我方" if act.piece.faction == board_view.player_faction else "对方"
 	var name := act.piece.type.display_name
 	if act.is_move():
 		if act.captured != null:
-			return " %s%s 移到(%d,%d)吃%s" % [who, name,
+			return "%s%s 移到(%d,%d)吃%s" % [who, name,
 				act.to_x, act.to_y, act.captured.type.display_name]
-		return " %s%s 移到(%d,%d)" % [who, name, act.to_x, act.to_y]
+		return "%s%s 移到(%d,%d)" % [who, name, act.to_x, act.to_y]
 	# 攻击:伤害/击杀一览
 	var hits: Array[String] = []
 	for entry in act.damage_log:
@@ -405,8 +402,8 @@ func _describe_action(act: Action) -> String:
 		else:
 			hits.append("伤%s%d" % [t.type.display_name, int(entry["dmg"])])
 	if hits.is_empty():
-		return " %s%s 攻击落空" % [who, name]
-	return " %s%s 攻击%s" % [who, name, "、".join(hits)]
+		return "%s%s 攻击落空" % [who, name]
+	return "%s%s 攻击%s" % [who, name, "、".join(hits)]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:

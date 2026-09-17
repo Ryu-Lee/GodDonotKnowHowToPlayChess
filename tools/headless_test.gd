@@ -45,6 +45,7 @@ func _run_tests() -> void:
 	_test_terrain_oneway()
 	_test_terrain_limited()
 	_test_terrain_limited_undo()
+	_test_walk_move()
 	_test_ruleops()
 	_test_ruleops_undo()
 	_test_temp_rule_effect()
@@ -284,6 +285,67 @@ func _test_palace_bounds() -> void:
 	for mv in MoveGen.piece_moves(m.state, jiang):
 		_check(m.state.board.in_palace("red", mv.to_x, mv.to_y),
 			"general stays in palace ((%d,%d))" % [mv.to_x, mv.to_y])
+
+# ---------------------------------------------------------------- M1 战棋步行(walk)
+
+## 骑士 walk 移动:曼哈顿距离 <=3 可达;敌格可占(占据式吃);不可穿越棋子;
+## 地形禁行格不可通行;友军格不可落。
+func _test_walk_move() -> void:
+	print("[walk move: wargame-style knight]")
+	var pack := _ruleops_with_fantasy()
+	var m := Match.new(pack["state"], pack["rules"], pack["piece_types"])
+	for p in m.state.pieces:
+		if not p.type.royal:
+			p.alive = false
+	# 黑骑士居中 (4,4),空盘:距离 1..3 全可达,0 与 >3 不可达
+	var knight := Piece.new(m.piece_types["knight"], "black", 4, 4)
+	m.state.pieces.append(knight)
+	var targets := _walk_targets(m.state, knight)
+	for dy in range(-3, 4):
+		for dx in range(-3, 4):
+			var d := abs(dx) + abs(dy)
+			var cell := Vector2i(4 + dx, 4 + dy)
+			if d >= 1 and d <= 3:
+				_check(targets.has(cell), "walk d=%d cell %s reachable" % [d, str(cell)])
+			else:
+				_check(not targets.has(cell), "walk d=%d cell %s not reachable" % [d, str(cell)])
+	# 敌格可占(吃):红士 (4,6) 在走法列表(距离 2)
+	var foe := Piece.new(m.piece_types["shi"], "red", 4, 6)
+	m.state.pieces.append(foe)
+	targets = _walk_targets(m.state, knight)
+	_check(targets.has(Vector2i(4, 6)), "walk captures adjacent-path enemy at (4,6)")
+	# 敌子挡路不可穿:(4,6) 后方 (4,7) 绕行路断(3,5)(5,5) 堵死后不可达
+	m.state.pieces.append(Piece.new(m.piece_types["shi"], "red", 3, 5))
+	m.state.pieces.append(Piece.new(m.piece_types["shi"], "red", 5, 5))
+	targets = _walk_targets(m.state, knight)
+	_check(not targets.has(Vector2i(4, 7)), "walk cannot pass through enemy wall to (4,7)")
+	_check(targets.has(Vector2i(4, 6)), "walk still captures walled enemy at (4,6)")
+	# 友军格不可落、不可穿:黑士 (4,3) 堵直线 => (4,2) 绕行需 4 步(超距)不可达,
+	# 但两侧斜绕 3 步内可达 (3,2)/(5,2)
+	m.state.pieces.clear()
+	m.state.pieces.append(knight)
+	m.state.pieces.append(Piece.new(m.piece_types["shi"], "black", 4, 3))
+	knight.x = 4
+	knight.y = 4
+	targets = _walk_targets(m.state, knight)
+	_check(not targets.has(Vector2i(4, 3)), "walk cannot stop on friendly cell")
+	_check(not targets.has(Vector2i(4, 2)), "walk detour around friendly costs 4 steps (out of range)")
+	_check(targets.has(Vector2i(3, 2)), "walk detours to (3,2) in 3 steps")
+	_check(targets.has(Vector2i(5, 2)), "walk detours to (5,2) in 3 steps")
+	# 地形禁行格不可通行:(4,3) 改为禁行山 => (4,2) 只能绕 (3,3)(5,3) —— 堵死两翼后不可达
+	m.state.pieces.pop_back()
+	m.state.board.cell(4, 3).pass_rule = "impassable"
+	m.state.board.cell(3, 3).pass_rule = "impassable"
+	m.state.board.cell(5, 3).pass_rule = "impassable"
+	targets = _walk_targets(m.state, knight)
+	_check(not targets.has(Vector2i(4, 2)), "walk blocked by impassable ridge to (4,2)")
+
+## piece_moves 落点集合(测试辅助)。
+func _walk_targets(state: MatchState, knight: Piece) -> Dictionary:
+	var t := {}
+	for mv in MoveGen.piece_moves(state, knight):
+		t[Vector2i(mv.to_x, mv.to_y)] = true
+	return t
 
 # ---------------------------------------------------------------- M1 地形
 

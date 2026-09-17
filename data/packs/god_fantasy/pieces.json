@@ -6,8 +6,8 @@
       "name": "骑士",
       "tier": "fantasy",
       "move": {
-        "type": "rider",
-        "pattern": [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]]
+        "type": "walk",
+        "range": 3
       },
       "attack": {
         "type": "melee",
@@ -20,7 +20,7 @@
       "value": 4,
       "royal": false,
       "abilities": [],
-      "flavor": "神随手捏出的西洋棋子,八方跳跃不蹩腿,近身互殴有反击。"
+      "flavor": "神随手捏出的西洋棋子,步行三格机动灵活,近身互殴有反击。"
     },
     "archer": {
       "name": "弓箭手",
