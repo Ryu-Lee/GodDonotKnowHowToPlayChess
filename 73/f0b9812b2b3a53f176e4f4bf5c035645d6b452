@@ -1,0 +1,40 @@
+presentation/battle_screen.gd
+  s_09245e0080122e::t_fea759feb3e206 189,200-201
+  s_09245e0080122e::t_7ca8882d317db2 387,393,395,405-406
+  s_09245e0080122e::t_8bec76392b0b95 60,64
+  s_09245e0080122e::t_9afdac58ca3aac 372,378,380-381
+data/packs/god_fantasy/pieces.json
+  s_09245e0080122e::t_9c909b48dbb70c 9
+  s_09245e0080122e::t_a0eff8cf2c55b0 10
+  s_09245e0080122e::t_eb73f565e100d9 23
+engine/movegen.gd
+  s_09245e0080122e::t_b0ceba6aec440b 160-161,166,169,171-173
+  s_09245e0080122e::t_b006906ec2d78e 40-41
+  s_09245e0080122e::t_c13bcef4cc4284 114-115
+  s_09245e0080122e::t_8b2e8be307203c 143-159,162-165,167-168,170,174-184
+engine/piece_type.gd
+  s_09245e0080122e::t_7e5cba60e53412 35
+  s_09245e0080122e::t_906f8fae407815 8
+  s_09245e0080122e::t_451b47331d9ece 10
+tools/headless_test.gd
+  s_09245e0080122e::t_d358a50475a5bf 289-290,293-299,301-302,304-306,310,318-319,349
+  s_09245e0080122e::t_4aedf93ed3ed80 291-292,300,303,307-309,311-317,320-322,325-331,335-348
+  s_09245e0080122e::t_632508637298d2 323-324,332-334
+  s_09245e0080122e::t_e936593ebcd1db 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "73f0b9812b2b3a53f176e4f4bf5c035645d6b452",
+  "prompts": {},
+  "sessions": {
+    "s_09245e0080122e": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "fae9a65b-321b-4199-80a3-f1ee799570ff",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
