@@ -258,12 +258,7 @@ func _draw_board() -> void:
 			draw_line(_to_screen(x, river_bottom), _to_screen(x, b.height - 1), line, 2.0)
 		else:
 			draw_line(_to_screen(x, 0), _to_screen(x, b.height - 1), line, 2.0)
-	# 楚河汉界
-	if river_top >= 0:
-		var mid_y: float = (_to_screen(0, river_top).y + _to_screen(0, river_bottom).y) / 2.0
-		var font := ThemeDB.fallback_font
-		draw_string(font, Vector2(MARGIN_X - 42, mid_y + 7), "楚 河    汉 界",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#8a6a2f"))
+	# 河界留白(不写字样)
 	# 九宫斜线(闭区间角点:左上-右下 / 右上-左下)
 	for faction in ["red", "black"]:
 		var r: Rect2i = b.palace_rect(faction)
