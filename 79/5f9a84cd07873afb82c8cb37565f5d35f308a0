@@ -1,0 +1,21 @@
+data/packs/god_fantasy/pieces.json
+  s_09245e0080122e::t_c01983ebbc8370 14
+presentation/battle_screen.gd
+  s_09245e0080122e::t_cbe879d38f92f8 64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.25",
+  "base_commit_sha": "795f9a84cd07873afb82c8cb37565f5d35f308a0",
+  "prompts": {},
+  "sessions": {
+    "s_09245e0080122e": {
+      "agent_id": {
+        "tool": "Daedalus",
+        "id": "fae9a65b-321b-4199-80a3-f1ee799570ff",
+        "model": "unknown"
+      },
+      "human_author": "uid00946 <yulong.li@desaysv.com>"
+    }
+  }
+}
