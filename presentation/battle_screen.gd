@@ -61,7 +61,7 @@ func _layout() -> void:
 	history_label = Label.new()
 	history_label.position = Vector2(6, 34)
 	history_label.size = Vector2(160, 306)
-	history_label.autowrap_mode = TextServer.BREAK_MANDATORY
+	history_label.autowrap_mode = TextServer.BREAK_WORD_SMART
 	history_label.add_theme_font_size_override("font_size", 9)
 	history_label.add_theme_color_override("font_color", Color("#a89878"))
 	add_child(history_label)
